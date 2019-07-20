@@ -6,7 +6,7 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/19 18:17:32 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/20 20:20:47 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/21 00:11:01 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,10 +38,33 @@ impl std::ops::Mul<f64> for Vec3 {
 	}
 }
 
+impl std::ops::Mul<Vec3> for f64 {
+	type Output = Vec3;
+	fn mul(self, rhs: Vec3) -> Vec3 {
+		Vec3::new(rhs.x * self, rhs.y * self, rhs.z * self)
+	}
+}
+
 impl std::ops::Div<f64> for Vec3 {
 	type Output = Vec3;
 	fn div(self, rhs: f64) -> Vec3 {
 		Vec3::new(self.x / rhs, self.y / rhs, self.z / rhs)
+	}
+}
+
+trait Clampable {
+	fn clamp_to(self, min: Self, max: Self) -> Self;
+}
+
+impl Clampable for f64 {
+	fn clamp_to(self, min: f64, max: f64) -> f64 {
+		if self > max {
+			return max;
+		}
+		if self < min {
+			return min;
+		}
+		self
 	}
 }
 
@@ -73,6 +96,20 @@ impl Vec3 {
 		/* Make a copy and divide it by the magnitude*/
 		*self / mag
 	}
+
+	pub fn clamp_as_color(&self) -> Self {
+		self.clamp_to(Vec3::ORIGIN, Vec3::new(255.0, 255.0, 255.0))
+	}
+}
+
+impl Clampable for Vec3 {
+	fn clamp_to(self, min: Vec3, max: Vec3) -> Vec3 {
+		Vec3::new(
+			self.x.clamp_to(min.x, max.x),
+			self.y.clamp_to(min.y, max.y),
+			self.z.clamp_to(min.z, max.z),
+		)
+	}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -87,6 +124,8 @@ pub struct Ray {
 		** In what direction the ray is to be cast
 		*/
 	pub direction: Vec3,
+
+	pub level: u8,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -104,17 +143,17 @@ pub trait Intersectable {
 }
 
 impl Ray {
-	pub fn cast(&self, scene: &Vec<Box<dyn Intersectable>>) -> Option<Vec3> {
+	pub fn cast(&self, scene: &crate::Thruster) -> Option<Vec3> {
 		let mut intersections: Vec<(Intersection, &Box<dyn Intersectable>)> = Vec::new();
 		let mut closest;
 
-		for shape in scene.iter() {
+		for shape in scene.shapes.iter() {
 			if let Some(intersection) = shape.do_intersect(self) {
 				intersections.push((intersection, shape));
 			}
 		}
 
-		if intersections.is_empty() {
+		if intersections.is_empty() || self.level == 0 {
 			return None;
 		}
 
@@ -124,16 +163,31 @@ impl Ray {
 				closest = intersection;
 			}
 		}
-		
-		Some({ 
-			let orig_color = closest.1.mat().color;
-
-			let light_ray = (Vec3::new(0.0, 100.0, 0.0) - closest.0.origin).normalized();
-			let dot = closest.0.normal.dot(&light_ray);
-
-			let diffuse_color = orig_color * dot;
-			
-			orig_color * 0.3 + diffuse_color * 0.7
+		/* Color equation */
+		Some({
+			let mat = closest.1.mat();
+			let orig_color = mat.color;
+			let mut diff_color = Vec3::ORIGIN;
+			for light in scene.lights.iter() {
+				diff_color = diff_color + light.color() * light.luminosity_at(scene, &closest.0);
+			}
+			let refl_color = {
+				if mat.c_reflection <= 0.0 {
+					Vec3::ORIGIN
+				} else {
+					let reflection_dir = self.direction
+						- (self.direction.dot(&closest.0.normal) * 2.0) * closest.0.normal;
+					let ray = Ray {
+						origin: closest.0.origin,
+						direction: reflection_dir,
+						level: self.level - 1,
+					};
+					ray.cast(scene).or(Some(Vec3::ORIGIN))?
+				}
+			};
+			orig_color.clamp_as_color() * mat.c_ambient
+				+ diff_color.clamp_as_color() * mat.c_diffuse
+				+ refl_color.clamp_as_color() * mat.c_reflection
 		})
 	}
 }
@@ -172,5 +226,31 @@ impl Intersectable for Sphere {
 			origin: p,
 			normal,
 		})
+	}
+}
+
+pub struct Plane {
+	pub origin: Vec3,
+	pub normal: Vec3,
+
+	pub material: Material,
+}
+
+impl Intersectable for Plane {
+	fn mat(&self) -> Material {
+		self.material
+	}
+
+	fn do_intersect(&self, ray: &Ray) -> Option<Intersection> {
+		let t = (self.origin - ray.origin).dot(&self.normal) / (self.normal.dot(&ray.direction));
+		if t < 0.001 {
+			None
+		} else {
+			Some(Intersection {
+				origin: ray.origin + (ray.direction * t),
+				t,
+				normal: self.normal,
+			})
+		}
 	}
 }

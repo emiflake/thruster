@@ -6,7 +6,7 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/19 18:23:53 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/20 18:25:29 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/20 23:27:05 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,6 +46,7 @@ impl Camera for PerspectiveCamera {
 		Ray {
 			origin: self.position,
 			direction: Vec3::new(px, py, 1.0).normalized(),
+			level: 5,
 		}
 	}
 }
