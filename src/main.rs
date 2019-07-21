@@ -6,7 +6,7 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/19 18:06:37 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/21 17:55:23 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/21 22:48:54 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,17 +63,17 @@ pub fn main() -> std::result::Result<(), String> {
 						.map_err(|_| "Error loading earth image")?,
 				},
 			}),
-			Box::new(Sphere {
-				origin: Vec3::new(1.0, 0.5, 3.0),
-				radius: 0.5,
-				material: Material {
-					c_diffuse: 0.95,
-					c_ambient: 0.0,
-					c_reflection: 0.05,
-					texture: MatTex::load_from_file("wood.png")
-						.map_err(|_| "Error loading earth image")?,
-				},
-			}),
+			// Box::new(Sphere {
+			// 	origin: Vec3::new(1.0, 0.5, 3.0),
+			// 	radius: 0.5,
+			// 	material: Material {
+			// 		c_diffuse: 0.95,
+			// 		c_ambient: 0.0,
+			// 		c_reflection: 0.05,
+			// 		texture: MatTex::load_from_file("wood.png")
+			// 			.map_err(|_| "Error loading earth image")?,
+			// 	},
+			// }),
 			Box::new(Plane {
 				origin: Vec3::new(0.0, -1.0, 0.0),
 				normal: Vec3::new(0.0, 1.0, 0.0),
@@ -85,13 +85,17 @@ pub fn main() -> std::result::Result<(), String> {
 		],
 		lights: vec![
 			// Box::new(PointLight {
-			// origin: Vec3::new(0.0, 100.0, 0.0),
-			// color: Vec3::new(255.0, 255.0, 255.0),
+			// 	origin: Vec3::new(0.0, 100.0, 0.0),
+			// 	color: Vec3::new(255.0, 255.0, 255.0),
 			// }),
 			Box::new(PointLight {
-				origin: Vec3::new(50.0, 1.0, 0.0),
+				origin: Vec3::new(1.0, 5.0, 5.0),
 				color: Vec3::new(255.0, 255.0, 255.0),
 			}),
+			// Box::new(PointLight {
+			// 	origin: Vec3::new(-50.0, 2.0, 0.0),
+			// 	color: Vec3::new(255.0, 255.0, 255.0),
+			// }),
 		],
 	};
 

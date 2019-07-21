@@ -6,7 +6,7 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/20 21:05:24 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/21 17:57:27 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/21 22:34:18 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,8 +30,11 @@ impl Lightsource for PointLight {
 			direction: light_ray,
 			level: 0,
 		};
-		if ray.cast(&scene).is_some() {
-			return 0.0;
+		let intersections = ray.cast(&scene);
+		for inter in intersections.iter() {
+			if intersection.origin.distance(&self.origin) > inter.0.origin.distance(&self.origin) {
+				return 0.0;
+			}
 		}
 
 		let dot = intersection.normal.dot(&light_ray);

@@ -6,19 +6,18 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/21 17:25:15 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/21 17:30:47 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/21 21:58:49 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
+use std::time::SystemTime;
 
-use std::time::{SystemTime};
-
-use crate::{SCREEN_WIDTH, SCREEN_HEIGHT};
+use crate::{SCREEN_HEIGHT, SCREEN_WIDTH};
 
 use crate::camera::{Camera, PerspectiveCamera};
-use crate::lightsource::{Lightsource};
-use crate::shape::{Intersectable};
 use crate::image::{ImageBuffer, Rgb};
+use crate::lightsource::Lightsource;
+use crate::shape::Intersectable;
 
 use sdl2::pixels::Color;
 use sdl2::rect::Point;
@@ -55,7 +54,8 @@ impl Thruster {
 		for y in 0..(h as usize) {
 			for x in 0..(w as usize) {
 				let ray = self.camera.project_ray((x as f64, y as f64), (w, h));
-				if let Some(color) = ray.cast(&self) {
+				let intersections = ray.cast(&self);
+				if let Some(color) = ray.color_function(intersections, self) {
 					buf.put_pixel(
 						x as u32,
 						y as u32,

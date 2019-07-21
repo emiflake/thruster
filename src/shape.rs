@@ -6,7 +6,7 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/19 18:17:32 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/21 18:04:16 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/21 22:42:40 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -109,6 +109,14 @@ impl Vec3 {
 		*self / mag
 	}
 
+	pub fn distance2(&self, other: &Vec3) -> f64 {
+		(self.x - other.x).powf(2.0) + (self.y - other.y).powf(2.0) + (self.z - other.z).powf(2.0)
+	}
+
+	pub fn distance(&self, other: &Vec3) -> f64 {
+		self.distance2(other).sqrt()
+	}
+
 	pub fn clamp_as_color(&self) -> Self {
 		self.clamp_to(Vec3::ORIGIN, Vec3::new(255.0, 255.0, 255.0))
 	}
@@ -156,9 +164,11 @@ pub trait Intersectable {
 }
 
 impl Ray {
-	pub fn cast(&self, scene: &crate::thruster::Thruster) -> Option<Vec3> {
+	pub fn cast<'a>(
+		&self,
+		scene: &'a crate::thruster::Thruster,
+	) -> Vec<(Intersection, &'a Box<dyn Intersectable>)> {
 		let mut intersections: Vec<(Intersection, &Box<dyn Intersectable>)> = Vec::new();
-		let mut closest;
 
 		for shape in scene.shapes.iter() {
 			if let Some(intersection) = shape.do_intersect(self) {
@@ -166,64 +176,65 @@ impl Ray {
 			}
 		}
 
-		if intersections.is_empty() {
-			return None;
-		}
-		if self.level == 0 {
-			return None;
-			// return Some(Vec3::ORIGIN);
-		}
+		intersections
+	}
 
+	pub fn color_function(
+		&self,
+		intersections: Vec<(Intersection, &Box<dyn Intersectable>)>,
+		scene: &crate::thruster::Thruster,
+	) -> Option<Vec3> {
+		let mut closest;
 		closest = intersections.first()?;
 		for intersection in intersections.iter() {
 			if closest.0.t > intersection.0.t {
 				closest = intersection;
 			}
 		}
-		/* Color equation */
-		Some({
-			use crate::material::MatTex;
-			use image::Pixel;
-			let mat = closest.1.mat();
-			let inter = closest.0;
-			let orig_color = match &mat.texture {
-				MatTex::Color(col) => *col,
-				MatTex::Image(text) => {
-					let channels = text
-						.get_pixel(
-							(inter.text_pos.x * f64::from(text.width())) as u32 % text.width(),
-							(inter.text_pos.y * f64::from(text.height())) as u32 % text.height(),
-						)
-						.channels();
-					Vec3::new(
-						f64::from(channels[0]),
-						f64::from(channels[1]),
-						f64::from(channels[2]),
+		use crate::material::MatTex;
+		use image::Pixel;
+		let mat = closest.1.mat();
+		let inter = closest.0;
+		let orig_color = match &mat.texture {
+			MatTex::Color(col) => *col,
+			MatTex::Image(text) => {
+				let channels = text
+					.get_pixel(
+						(inter.text_pos.x * f64::from(text.width())) as u32 % text.width(),
+						(inter.text_pos.y * f64::from(text.height())) as u32 % text.height(),
 					)
-				}
-			};
-			let mut diff_color = Vec3::ORIGIN;
-			for light in scene.lights.iter() {
-				diff_color = diff_color + orig_color * light.luminosity_at(scene, &closest.0);
+					.channels();
+				Vec3::new(
+					f64::from(channels[0]),
+					f64::from(channels[1]),
+					f64::from(channels[2]),
+				)
 			}
-			let refl_color = {
-				if mat.c_reflection <= 0.0 {
-					Vec3::ORIGIN
-				} else {
-					let reflection_dir = self.direction
-						- (self.direction.dot(&closest.0.normal) * 2.0) * closest.0.normal;
-					let ray = Ray {
-						origin: closest.0.origin,
-						direction: reflection_dir,
-						level: self.level - 1,
-					};
-					ray.cast(scene).or(Some(Vec3::ORIGIN))?
-				}
-			};
+		};
+		let mut diff_color = Vec3::ORIGIN;
+		for light in scene.lights.iter() {
+			diff_color = diff_color + orig_color * light.luminosity_at(scene, &closest.0);
+		}
+		let refl_color = {
+			if mat.c_reflection <= 0.0 {
+				Vec3::ORIGIN
+			} else {
+				let reflection_dir = self.direction
+					- (self.direction.dot(&closest.0.normal) * 2.0) * closest.0.normal;
+				let ray = Ray {
+					origin: closest.0.origin,
+					direction: reflection_dir,
+					level: self.level - 1,
+				};
+				ray.color_function(ray.cast(scene), scene)
+					.or(Some(Vec3::ORIGIN))?
+			}
+		};
+		Some(
 			orig_color.clamp_as_color() * mat.c_ambient
 				+ diff_color.clamp_as_color() * mat.c_diffuse
-				+ refl_color.clamp_as_color() * mat.c_reflection
-		})
+				+ refl_color.clamp_as_color() * mat.c_reflection,
+		)
 	}
 }
 
@@ -254,6 +265,9 @@ impl Intersectable for Sphere {
 		let t0 = tca - thc;
 		let t1 = tca - thc;
 		let t = t0.max(t1);
+		if t <= 0.0 {
+			return None;
+		}
 		let p = ray.origin + (ray.direction * t);
 		let normal = (p - self.origin).normalized();
 		let text_pos = Vec2::new(
