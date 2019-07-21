@@ -6,9 +6,21 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/19 18:17:32 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/21 00:11:01 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/21 13:22:39 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Vec2 {
+	pub x: f64,
+	pub y: f64,
+}
+
+impl Vec2 {
+	pub fn new(x: f64, y: f64) -> Vec2 {
+		Vec2 { x, y }
+	}
+}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Vec3 {
@@ -133,11 +145,12 @@ pub struct Intersection {
 	pub t: f64,
 	pub normal: Vec3,
 	pub origin: Vec3,
+	pub text_pos: Vec2,
 }
 
 use crate::material::Material;
 pub trait Intersectable {
-	fn mat(&self) -> Material;
+	fn mat(&self) -> &Material;
 	/* Whether or not object intersects with the ray */
 	fn do_intersect(&self, ray: &Ray) -> Option<Intersection>;
 }
@@ -165,11 +178,29 @@ impl Ray {
 		}
 		/* Color equation */
 		Some({
+			use crate::material::MatTex;
+			use image::Pixel;
 			let mat = closest.1.mat();
-			let orig_color = mat.color;
+			let inter = closest.0;
+			let orig_color = match &mat.texture {
+				MatTex::Color(col) => *col,
+				MatTex::Image(text) => {
+					let channels = text
+						.get_pixel(
+							(inter.text_pos.x * f64::from(text.width())) as u32 % text.width(),
+							(inter.text_pos.y * f64::from(text.height())) as u32 % text.height(),
+						)
+						.channels();
+					Vec3::new(
+						f64::from(channels[0]),
+						f64::from(channels[1]),
+						f64::from(channels[2]),
+					)
+				}
+			};
 			let mut diff_color = Vec3::ORIGIN;
 			for light in scene.lights.iter() {
-				diff_color = diff_color + light.color() * light.luminosity_at(scene, &closest.0);
+				diff_color = diff_color + orig_color * light.luminosity_at(scene, &closest.0);
 			}
 			let refl_color = {
 				if mat.c_reflection <= 0.0 {
@@ -192,7 +223,7 @@ impl Ray {
 	}
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Clone)]
 pub struct Sphere {
 	pub origin: Vec3,
 	pub radius: f64,
@@ -201,8 +232,8 @@ pub struct Sphere {
 }
 
 impl Intersectable for Sphere {
-	fn mat(&self) -> Material {
-		self.material
+	fn mat(&self) -> &Material {
+		&self.material
 	}
 
 	fn do_intersect(&self, ray: &Ray) -> Option<Intersection> {
@@ -221,10 +252,15 @@ impl Intersectable for Sphere {
 		let t = t0.max(t1);
 		let p = ray.origin + (ray.direction * t);
 		let normal = (p - self.origin).normalized();
+		let text_pos = Vec2::new(
+			0.5 + normal.z.atan2(normal.x) / std::f64::consts::PI / 2.0,
+			0.5 - normal.y.asin() / std::f64::consts::PI,
+		);
 		Some(Intersection {
 			t,
 			origin: p,
 			normal,
+			text_pos,
 		})
 	}
 }
@@ -237,8 +273,8 @@ pub struct Plane {
 }
 
 impl Intersectable for Plane {
-	fn mat(&self) -> Material {
-		self.material
+	fn mat(&self) -> &Material {
+		&self.material
 	}
 
 	fn do_intersect(&self, ray: &Ray) -> Option<Intersection> {
@@ -246,10 +282,13 @@ impl Intersectable for Plane {
 		if t < 0.001 {
 			None
 		} else {
+			let p = ray.origin + (ray.direction * t);
+			let text_pos = Vec2::new(p.x, p.z);
 			Some(Intersection {
-				origin: ray.origin + (ray.direction * t),
+				origin: p,
 				t,
 				normal: self.normal,
+				text_pos,
 			})
 		}
 	}

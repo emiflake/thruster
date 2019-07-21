@@ -6,7 +6,7 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/19 18:06:37 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/21 00:09:42 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/21 13:26:14 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -85,6 +85,7 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Point;
+
 pub fn main() -> std::result::Result<(), String> {
 	let sdl_context = sdl2::init().unwrap();
 	let video_subsystem = sdl_context.video().unwrap();
@@ -98,30 +99,30 @@ pub fn main() -> std::result::Result<(), String> {
 		.position_centered()
 		.build()
 		.unwrap();
+
+	use crate::material::MatTex;
 	let thruster = Thruster {
 		camera: PerspectiveCamera::new(Vec3::ORIGIN, SCREEN_WIDTH / SCREEN_HEIGHT),
 		shapes: vec![
 			Box::new(Sphere {
-				origin: Vec3::new(0.0, 1.0, 5.0),
+				origin: Vec3::new(0.0, 0.5, 5.0),
 				radius: 1.0,
-				material: Material::reflective(Vec3::new(0.0, 255.0, 0.0)),
+				material: Material::diffuse(
+					MatTex::load_from_file("wood.png").map_err(|_| "Error loading image")?,
+				),
 			}),
 			Box::new(Plane {
-				origin: Vec3::new(0.0, -5.0, 0.0),
+				origin: Vec3::new(0.0, -1.0, 0.0),
 				normal: Vec3::new(0.0, 1.0, 0.0),
-				material: Material::diffuse(Vec3::new(255.0, 255.0, 255.0)),
+				material: Material::reflective(
+					MatTex::load_from_file("checker.png").map_err(|_| "Error loading image")?,
+				),
 			}),
 		],
-		lights: vec![
-			Box::new(PointLight {
-				origin: Vec3::new(0.0, 100.0, 0.0),
-				color: Vec3::new(255.0, 255.0, 255.0) * 0.5,
-			}),
-			Box::new(PointLight {
-				origin: Vec3::new(5.0, 5.0, 5.0),
-				color: Vec3::new(255.0, 0.0, 0.0),
-			}),
-		],
+		lights: vec![Box::new(PointLight {
+			origin: Vec3::new(0.0, 100.0, 0.0),
+			color: Vec3::new(255.0, 255.0, 255.0),
+		})],
 	};
 
 	let mut canvas = window.into_canvas().build().unwrap();
