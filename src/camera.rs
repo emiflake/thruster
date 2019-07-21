@@ -6,15 +6,14 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/19 18:23:53 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/20 23:27:05 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/21 15:48:54 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
 use crate::shape::{Ray, Vec3};
-use crate::{SCREEN_HEIGHT, SCREEN_WIDTH};
 
 pub trait Camera {
-	fn project_ray(&self, screen_pos: (f64, f64)) -> Ray;
+	fn project_ray(&self, screen_pos: (f64, f64), screen_dim: (f64, f64)) -> Ray;
 }
 
 pub struct PerspectiveCamera {
@@ -36,12 +35,12 @@ impl PerspectiveCamera {
 }
 
 impl Camera for PerspectiveCamera {
-	fn project_ray(&self, (sx, sy): (f64, f64)) -> Ray {
-		let px = (2.0 * ((sx + 0.5) / SCREEN_WIDTH) - 1.0)
+	fn project_ray(&self, (sx, sy): (f64, f64), (w, h): (f64, f64)) -> Ray {
+		let px = (2.0 * ((sx + 0.5) / w) - 1.0)
 			* self.aspect_ratio
 			* (self.fov / 2.0 * std::f64::consts::PI / 180.0).tan();
-		let py = (1.0 - 2.0 * ((sy + 0.5) / SCREEN_HEIGHT))
-			* (self.fov / 2.0 * std::f64::consts::PI / 180.0).tan();
+		let py =
+			(1.0 - 2.0 * ((sy + 0.5) / h)) * (self.fov / 2.0 * std::f64::consts::PI / 180.0).tan();
 
 		Ray {
 			origin: self.position,

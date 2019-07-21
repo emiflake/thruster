@@ -6,7 +6,7 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/20 19:44:22 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/21 12:17:29 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/21 17:32:33 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@ use image;
 use std::fs::File;
 use std::io::BufReader;
 
+#[allow(dead_code)]
 #[derive(Clone)]
 pub enum MatTex {
 	Color(Vec3),
@@ -23,6 +24,7 @@ pub enum MatTex {
 }
 
 impl MatTex {
+	#[allow(dead_code)]
 	pub fn from_color(x: f64, y: f64, z: f64) -> MatTex {
 		MatTex::Color(Vec3 { x, y, z })
 	}
@@ -44,6 +46,7 @@ pub struct Material {
 }
 
 impl Material {
+	#[allow(dead_code)]
 	pub fn diffuse(tex: MatTex) -> Material {
 		Material {
 			texture: tex,

@@ -6,7 +6,7 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/19 18:17:32 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/21 13:22:39 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/21 18:04:16 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -156,7 +156,7 @@ pub trait Intersectable {
 }
 
 impl Ray {
-	pub fn cast(&self, scene: &crate::Thruster) -> Option<Vec3> {
+	pub fn cast(&self, scene: &crate::thruster::Thruster) -> Option<Vec3> {
 		let mut intersections: Vec<(Intersection, &Box<dyn Intersectable>)> = Vec::new();
 		let mut closest;
 
@@ -166,8 +166,12 @@ impl Ray {
 			}
 		}
 
-		if intersections.is_empty() || self.level == 0 {
+		if intersections.is_empty() {
 			return None;
+		}
+		if self.level == 0 {
+			return None;
+			// return Some(Vec3::ORIGIN);
 		}
 
 		closest = intersections.first()?;

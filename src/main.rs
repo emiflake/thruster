@@ -6,85 +6,34 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/19 18:06:37 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/21 13:26:14 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/21 17:55:23 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
 extern crate image;
-
+extern crate rand;
 extern crate sdl2;
 
 mod camera;
 mod lightsource;
 mod material;
 mod shape;
+mod thruster;
 
 pub const SCREEN_WIDTH: f64 = 1280.0;
 pub const SCREEN_HEIGHT: f64 = 720.0;
 
-use camera::{Camera, PerspectiveCamera};
-use lightsource::{Lightsource, PointLight};
-use material::Material;
-use shape::{Intersectable, Plane, Sphere, Vec3};
+use camera::PerspectiveCamera;
+use lightsource::PointLight;
+use material::{MatTex, Material};
+use shape::{Plane, Sphere, Vec3};
 
-pub struct Thruster {
-	pub camera: PerspectiveCamera,
-	pub shapes: Vec<Box<dyn Intersectable>>,
-	pub lights: Vec<Box<dyn Lightsource>>,
-}
-
-// impl State for Thruster {
-// 	fn new() -> Result<Thruster> {
-// 		Ok(Thruster {
-// 			camera: PerspectiveCamera::new(Vec3::ORIGIN, SCREEN_WIDTH / SCREEN_HEIGHT),
-// 			shapes: vec![
-// 				Box::new(Sphere {
-// 					origin: Vec3::new(0.0, 0.0, 5.0),
-// 					radius: 1.0,
-// 					material: Material {
-// 						color: Vec3::new(0.0, 255.0, 0.0),
-// 					},
-// 				},
-// 			)],
-// 			lights: vec![
-// 				Box::new(PointLight {
-// 					origin: Vec3::new(0.0, 10.0, 0.0),
-// 					color: Vec3::new(255.0, 255.0, 255.0),
-// 				}),
-// 			],
-// 		})
-// 	}
-
-// 	fn draw(&mut self, window: &mut Window) -> Result<()> {
-// 		window.clear(Color::WHITE)?;
-// 		println!("{}", window.current_fps());
-// for y in 0..(SCREEN_HEIGHT as usize) {
-// 	for x in 0..(SCREEN_WIDTH as usize) {
-// 		let ray = self.camera.project_ray((x as f64, y as f64));
-
-// 		if let Some(color) = ray.cast(&self) {
-// 			window.draw(
-// 				&Rectangle::new((x as u32, y as u32), (1, 1)),
-// 				Col(Color::from_rgba(color.x.clamp(0.0, 255.0) as u8, color.y.clamp(0.0, 255.0) as u8, color.z.clamp(0.0, 255.0) as u8, 1.0)),
-// 			);
-// 		}
-// 	}
-// }
-// 		Ok(())
-// 	}
-// }
-// fn main() {
-// 	run::<Thruster>(
-// 		"The Thruster Raytracer",
-// 		Vector::new(SCREEN_WIDTH as f32, SCREEN_HEIGHT as f32),
-// 		Settings::default(),
-// 	);
-// }
-
+#[allow(unused_imports)]
 use sdl2::event::Event;
+#[allow(unused_imports)]
 use sdl2::keyboard::Keycode;
-use sdl2::pixels::Color;
-use sdl2::rect::Point;
+
+use std::time::Duration;
 
 pub fn main() -> std::result::Result<(), String> {
 	let sdl_context = sdl2::init().unwrap();
@@ -100,29 +49,50 @@ pub fn main() -> std::result::Result<(), String> {
 		.build()
 		.unwrap();
 
-	use crate::material::MatTex;
-	let thruster = Thruster {
+	let mut thruster = thruster::Thruster {
 		camera: PerspectiveCamera::new(Vec3::ORIGIN, SCREEN_WIDTH / SCREEN_HEIGHT),
 		shapes: vec![
 			Box::new(Sphere {
 				origin: Vec3::new(0.0, 0.5, 5.0),
 				radius: 1.0,
-				material: Material::diffuse(
-					MatTex::load_from_file("wood.png").map_err(|_| "Error loading image")?,
-				),
+				material: Material {
+					c_diffuse: 0.8,
+					c_ambient: 0.0,
+					c_reflection: 0.2,
+					texture: MatTex::load_from_file("earth.png")
+						.map_err(|_| "Error loading earth image")?,
+				},
+			}),
+			Box::new(Sphere {
+				origin: Vec3::new(1.0, 0.5, 3.0),
+				radius: 0.5,
+				material: Material {
+					c_diffuse: 0.95,
+					c_ambient: 0.0,
+					c_reflection: 0.05,
+					texture: MatTex::load_from_file("wood.png")
+						.map_err(|_| "Error loading earth image")?,
+				},
 			}),
 			Box::new(Plane {
 				origin: Vec3::new(0.0, -1.0, 0.0),
 				normal: Vec3::new(0.0, 1.0, 0.0),
 				material: Material::reflective(
-					MatTex::load_from_file("checker.png").map_err(|_| "Error loading image")?,
+					MatTex::load_from_file("checker.png")
+						.map_err(|_| "Error loading checker image")?,
 				),
 			}),
 		],
-		lights: vec![Box::new(PointLight {
-			origin: Vec3::new(0.0, 100.0, 0.0),
-			color: Vec3::new(255.0, 255.0, 255.0),
-		})],
+		lights: vec![
+			// Box::new(PointLight {
+			// origin: Vec3::new(0.0, 100.0, 0.0),
+			// color: Vec3::new(255.0, 255.0, 255.0),
+			// }),
+			Box::new(PointLight {
+				origin: Vec3::new(50.0, 1.0, 0.0),
+				color: Vec3::new(255.0, 255.0, 255.0),
+			}),
+		],
 	};
 
 	let mut canvas = window.into_canvas().build().unwrap();
@@ -131,11 +101,7 @@ pub fn main() -> std::result::Result<(), String> {
 	canvas.present();
 	let mut event_pump = sdl_context.event_pump().unwrap();
 
-	use std::time::{Duration, SystemTime};
-	let mut last_frame = SystemTime::now();
 	'running: loop {
-		canvas.set_draw_color(Color::RGB(0, 0, 0));
-		canvas.clear();
 		for event in event_pump.poll_iter() {
 			match event {
 				Event::Quit { .. }
@@ -143,26 +109,26 @@ pub fn main() -> std::result::Result<(), String> {
 					keycode: Some(Keycode::Escape),
 					..
 				} => break 'running,
+				Event::KeyDown { keycode, .. } => match keycode {
+					Some(Keycode::E) => thruster.camera.position.y -= 0.1,
+					Some(Keycode::Q) => thruster.camera.position.y += 0.1,
+					Some(Keycode::S) => thruster.camera.position.z -= 0.1,
+					Some(Keycode::W) => thruster.camera.position.z += 0.1,
+					Some(Keycode::A) => thruster.camera.position.x -= 0.1,
+					Some(Keycode::D) => thruster.camera.position.x += 0.1,
+					Some(Keycode::Equals) => thruster.camera.fov += 5.0,
+					Some(Keycode::Minus) => thruster.camera.fov -= 5.0,
+					Some(Keycode::Space) => {
+						thruster.screenshot("screenshot.png", 7680.0, 4320.0)?
+					}
+					_ => {}
+				},
 				_ => {}
 			}
 		}
 
-		for y in 0..(SCREEN_HEIGHT as usize) {
-			for x in 0..(SCREEN_WIDTH as usize) {
-				let ray = thruster.camera.project_ray((x as f64, y as f64));
+		thruster.render(&mut canvas)?;
 
-				if let Some(color) = ray.cast(&thruster) {
-					canvas.set_draw_color(Color::RGB(color.x as u8, color.y as u8, color.z as u8));
-					canvas.draw_point(Point::new(x as i32, y as i32))?;
-				}
-			}
-		}
-		let now = SystemTime::now();
-		let delta = now
-			.duration_since(last_frame)
-			.expect("Could not get delta time");
-		println!("{}", 1_000_000f64 / delta.as_micros() as f64);
-		last_frame = now;
 		canvas.present();
 		::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
 	}

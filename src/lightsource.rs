@@ -6,14 +6,14 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/20 21:05:24 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/20 23:29:00 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/21 17:57:27 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
 use crate::shape::{Intersection, Ray, Vec3};
 
 pub trait Lightsource {
-	fn luminosity_at(&self, scene: &crate::Thruster, intersection: &Intersection) -> f64;
+	fn luminosity_at(&self, scene: &crate::thruster::Thruster, intersection: &Intersection) -> f64;
 	fn color(&self) -> Vec3;
 }
 
@@ -23,14 +23,14 @@ pub struct PointLight {
 }
 
 impl Lightsource for PointLight {
-	fn luminosity_at(&self, scene: &crate::Thruster, intersection: &Intersection) -> f64 {
+	fn luminosity_at(&self, scene: &crate::thruster::Thruster, intersection: &Intersection) -> f64 {
 		let light_ray = (self.origin - intersection.origin).normalized();
 		let ray = Ray {
 			origin: intersection.origin,
 			direction: light_ray,
 			level: 0,
 		};
-		if let Some(_intersection) = ray.cast(&scene) {
+		if ray.cast(&scene).is_some() {
 			return 0.0;
 		}
 
