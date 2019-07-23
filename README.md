@@ -8,6 +8,7 @@ Built on `image` crate and `rust-sdl2`.
 To run the raytracer, simply run these two commands:
 ```
 git clone github.com/emiflake/thruster
+cd ./thruster
 cargo run --release
 ```
 For now, there is not much customizability.
