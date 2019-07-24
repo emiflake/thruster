@@ -6,7 +6,7 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/21 17:25:15 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/21 21:58:49 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/24 23:43:04 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,7 @@ pub struct Thruster {
 impl Thruster {
 	pub fn screenshot(&self, filename: &'static str, w: f64, h: f64) -> Result<(), String> {
 		let before = SystemTime::now();
-		let screenshot = self.render_to_buffer(w, h);
+		let screenshot = self.render_to_buffer(w, h, Some(SystemTime::now()));
 
 		// image::imageops::resize(&screenshot, 1600, 900, image::FilterType::Lanczos3)
 		screenshot
@@ -48,10 +48,23 @@ impl Thruster {
 		Ok(())
 	}
 
-	pub fn render_to_buffer(&self, w: f64, h: f64) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
+	pub fn render_to_buffer(
+		&self,
+		w: f64,
+		h: f64,
+		debug: Option<SystemTime>,
+	) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
 		let mut buf = ImageBuffer::new(w as u32, h as u32);
 
 		for y in 0..(h as usize) {
+			if debug.is_some() {
+				println!(
+					"{}/{} - {}",
+					y,
+					h,
+					debug.unwrap().elapsed().unwrap().as_millis()
+				);
+			}
 			for x in 0..(w as usize) {
 				let ray = self.camera.project_ray((x as f64, y as f64), (w, h));
 				let intersections = ray.cast(&self);
@@ -74,7 +87,7 @@ impl Thruster {
 		&self,
 		canvas: &mut sdl2::render::Canvas<sdl2::video::Window>,
 	) -> Result<(), String> {
-		let upscaled = self.render_to_buffer(SCREEN_WIDTH, SCREEN_HEIGHT);
+		let upscaled = self.render_to_buffer(SCREEN_WIDTH, SCREEN_HEIGHT, None);
 
 		for y in 0..(SCREEN_HEIGHT as usize) {
 			for x in 0..(SCREEN_WIDTH as usize) {

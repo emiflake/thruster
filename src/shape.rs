@@ -6,7 +6,7 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/19 18:17:32 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/24 20:52:25 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/24 23:55:47 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -122,9 +122,11 @@ impl Vec3 {
 	}
 
 	pub fn cross_product(&self, other: &Vec3) -> Vec3 {
-		Vec3::new(self.y * other.z - self.z * other.y,
+		Vec3::new(
+			self.y * other.z - self.z * other.y,
 			self.z * other.x - self.x * other.z,
-			self.x * other.y - self.y * other.x)
+			self.x * other.y - self.y * other.x,
+		)
 	}
 }
 
@@ -135,6 +137,27 @@ impl Clampable for Vec3 {
 			self.y.clamp_to(min.y, max.y),
 			self.z.clamp_to(min.z, max.z),
 		)
+	}
+}
+
+#[derive(Copy, Clone)]
+pub struct Vertex {
+	pub origin: Vec3,
+	pub normal: Vec3,
+	pub uv: Vec2,
+}
+
+impl Vertex {
+	pub fn new(origin: Vec3, normal: Vec3, uv: Vec2) -> Self {
+		Self { origin, normal, uv }
+	}
+
+	pub fn from_parsed(vertex: &crate::parser::Vertex3) -> Self {
+		Self {
+			origin: Vec3::new(vertex.pos.x, vertex.pos.y, vertex.pos.z),
+			normal: Vec3::new(vertex.normal.x, vertex.normal.y, vertex.normal.z),
+			uv: Vec2::new(vertex.uv.x, vertex.uv.y),
+		}
 	}
 }
 
@@ -203,11 +226,13 @@ impl Ray {
 		let inter = closest.0;
 		let orig_color = match &mat.texture {
 			MatTex::Color(col) => *col,
-			MatTex::Image(text) => {
+			MatTex::Image { img: text, scaling } => {
 				let channels = text
 					.get_pixel(
-						(inter.text_pos.x * f64::from(text.width())) as u32 % text.width(),
-						(inter.text_pos.y * f64::from(text.height())) as u32 % text.height(),
+						(inter.text_pos.x * f64::from(text.width()) / scaling.0) as u32
+							% text.width(),
+						(inter.text_pos.y * f64::from(text.height()) / scaling.1) as u32
+							% text.height(),
 					)
 					.channels();
 				Vec3::new(
@@ -319,9 +344,9 @@ impl Intersectable for Plane {
 }
 
 pub struct Triangle {
-	pub a: Vec3,
-	pub b: Vec3,
-	pub c: Vec3,
+	pub a: Vertex,
+	pub b: Vertex,
+	pub c: Vertex,
 
 	pub material: Material,
 }
@@ -332,23 +357,21 @@ impl Intersectable for Triangle {
 	}
 
 	fn do_intersect(&self, ray: &Ray) -> Option<Intersection> {
-		let ab = self.b - self.a;
-		let ac = self.c - self.a;
+		let ab = self.b.origin - self.a.origin;
+		let ac = self.c.origin - self.a.origin;
 
 		let pvec = ray.direction.cross_product(&ac);
 		let det = ab.dot(&pvec);
 
-		let t = pvec.dot(&self.a);
-		let p = ray.origin + ray.direction * t;
 		// Culling
 		// if det < std::f64::EPSILON {
-			// return None;
+		// return None;
 		// }
 		if det.abs() < std::f64::EPSILON {
 			return None;
 		}
 		let inv_det = 1.0 / det;
-		let tvec = ray.origin - self.a;
+		let tvec = ray.origin - self.a.origin;
 		let u = tvec.dot(&pvec) * inv_det;
 		if u < 0.0 || u > 1.0 {
 			return None;
@@ -359,11 +382,12 @@ impl Intersectable for Triangle {
 			return None;
 		}
 		let t = ac.dot(&qvec) * inv_det;
+		let p = ray.origin + ray.direction * t;
 
 		Some(Intersection {
 			origin: p,
 			t,
-			normal: pvec.normalized(),
+			normal: self.a.normal * u + self.b.normal * v + self.c.normal * (1.0 - u - v),
 			text_pos: Vec2::new(0.0, 0.0),
 		})
 	}

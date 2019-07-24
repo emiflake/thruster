@@ -6,7 +6,7 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/20 19:44:22 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/21 17:32:33 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/24 23:51:04 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,10 @@ use std::io::BufReader;
 #[derive(Clone)]
 pub enum MatTex {
 	Color(Vec3),
-	Image(image::RgbImage),
+	Image {
+		img: image::RgbImage,
+		scaling: (f64, f64),
+	},
 }
 
 impl MatTex {
@@ -28,12 +31,15 @@ impl MatTex {
 	pub fn from_color(x: f64, y: f64, z: f64) -> MatTex {
 		MatTex::Color(Vec3 { x, y, z })
 	}
-	pub fn load_from_file(_filename: &'static str) -> std::io::Result<MatTex> {
+	pub fn load_from_file(_filename: &'static str, scaling: (f64, f64)) -> std::io::Result<MatTex> {
 		let mut f = File::open(_filename)?;
 		let reader = BufReader::new(&mut f);
 		let img = image::load(reader, image::ImageFormat::PNG)
 			.map_err(|_| std::io::ErrorKind::InvalidData)?;
-		Ok(MatTex::Image(img.to_rgb()))
+		Ok(MatTex::Image {
+			img: img.to_rgb(),
+			scaling,
+		})
 	}
 }
 
