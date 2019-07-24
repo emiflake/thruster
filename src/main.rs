@@ -6,7 +6,7 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/19 18:06:37 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/21 22:48:54 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/24 20:57:51 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,7 @@ pub const SCREEN_HEIGHT: f64 = 720.0;
 use camera::PerspectiveCamera;
 use lightsource::PointLight;
 use material::{MatTex, Material};
-use shape::{Plane, Sphere, Vec3};
+use shape::{Plane, Sphere, Triangle, Vec3};
 
 #[allow(unused_imports)]
 use sdl2::event::Event;
@@ -62,6 +62,12 @@ pub fn main() -> std::result::Result<(), String> {
 					texture: MatTex::load_from_file("earth.png")
 						.map_err(|_| "Error loading earth image")?,
 				},
+			}),
+			Box::new(Triangle {
+				a: Vec3::new(-2.0, 2.0, 10.0),
+				b: Vec3::new(2.0, 2.0, 10.0),
+				c: Vec3::new(0.0, 5.0, 10.0),
+				material: Material::diffuse(MatTex::Color(Vec3::new(255.0, 0.0, 0.0)))
 			}),
 			// Box::new(Sphere {
 			// 	origin: Vec3::new(1.0, 0.5, 3.0),

@@ -6,7 +6,7 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/19 18:17:32 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/21 22:42:40 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/24 20:52:25 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -119,6 +119,12 @@ impl Vec3 {
 
 	pub fn clamp_as_color(&self) -> Self {
 		self.clamp_to(Vec3::ORIGIN, Vec3::new(255.0, 255.0, 255.0))
+	}
+
+	pub fn cross_product(&self, other: &Vec3) -> Vec3 {
+		Vec3::new(self.y * other.z - self.z * other.y,
+			self.z * other.x - self.x * other.z,
+			self.x * other.y - self.y * other.x)
 	}
 }
 
@@ -309,5 +315,56 @@ impl Intersectable for Plane {
 				text_pos,
 			})
 		}
+	}
+}
+
+pub struct Triangle {
+	pub a: Vec3,
+	pub b: Vec3,
+	pub c: Vec3,
+
+	pub material: Material,
+}
+
+impl Intersectable for Triangle {
+	fn mat(&self) -> &Material {
+		&self.material
+	}
+
+	fn do_intersect(&self, ray: &Ray) -> Option<Intersection> {
+		let ab = self.b - self.a;
+		let ac = self.c - self.a;
+
+		let pvec = ray.direction.cross_product(&ac);
+		let det = ab.dot(&pvec);
+
+		let t = pvec.dot(&self.a);
+		let p = ray.origin + ray.direction * t;
+		// Culling
+		// if det < std::f64::EPSILON {
+			// return None;
+		// }
+		if det.abs() < std::f64::EPSILON {
+			return None;
+		}
+		let inv_det = 1.0 / det;
+		let tvec = ray.origin - self.a;
+		let u = tvec.dot(&pvec) * inv_det;
+		if u < 0.0 || u > 1.0 {
+			return None;
+		}
+		let qvec = tvec.cross_product(&ab);
+		let v = ray.direction.dot(&qvec) * inv_det;
+		if v < 0.0 || u + v > 1.0 {
+			return None;
+		}
+		let t = ac.dot(&qvec) * inv_det;
+
+		Some(Intersection {
+			origin: p,
+			t,
+			normal: pvec.normalized(),
+			text_pos: Vec2::new(0.0, 0.0),
+		})
 	}
 }
