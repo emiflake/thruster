@@ -6,7 +6,7 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/19 18:17:32 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/25 17:00:12 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/25 17:26:51 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -161,6 +161,8 @@ impl Vertex {
     }
 }
 
+type Shape<'a> = Box<dyn Intersectable + 'a + Sync>;
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Ray {
     /*
@@ -196,8 +198,8 @@ impl Ray {
     pub fn cast<'a>(
         &self,
         scene: &'a crate::thruster::Thruster,
-    ) -> Vec<(Intersection, &'a Box<dyn Intersectable + 'a>)> {
-        let mut intersections: Vec<(Intersection, &Box<dyn Intersectable + 'a>)> = Vec::new();
+    ) -> Vec<(Intersection, &'a Shape<'a>)> {
+        let mut intersections: Vec<(Intersection, &Shape<'a>)> = Vec::new();
 
         for shape in scene.shapes.iter() {
             if let Some(intersection) = shape.do_intersect(self) {
@@ -210,7 +212,7 @@ impl Ray {
 
     pub fn color_function<'a>(
         &self,
-        intersections: Vec<(Intersection, &Box<dyn Intersectable + 'a>)>,
+        intersections: Vec<(Intersection, &Shape<'a>)>,
         scene: &crate::thruster::Thruster,
     ) -> Option<Vec3> {
         let mut closest;
@@ -315,6 +317,7 @@ impl Intersectable for Sphere {
         })
     }
 }
+
 
 pub struct Plane {
     pub origin: Vec3,
