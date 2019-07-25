@@ -11,5 +11,5 @@ sdl2 = "0.32.2"
 image = "0.22.0"
 rand = "0.3"
 
-# [dependencies.sdl2-sys]
-# features = ["use_mac_framework"]
+[dependencies.sdl2-sys]
+features = ["use_mac_framework"]
