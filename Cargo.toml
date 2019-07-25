@@ -10,6 +10,9 @@ edition = "2018"
 sdl2 = "0.32.2"
 image = "0.22.0"
 rand = "0.3"
+scoped_threadpool = "0.1.9"
 
-[dependencies.sdl2-sys]
-features = ["use_mac_framework"]
+
+
+# [dependencies.sdl2-sys]
+# features = ["use_mac_framework"]
