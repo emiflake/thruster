@@ -6,7 +6,7 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/21 17:25:15 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/25 22:13:24 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/26 23:16:13 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,20 +17,21 @@ use crate::{SCREEN_HEIGHT, SCREEN_WIDTH};
 use crate::camera::{Camera, PerspectiveCamera};
 use crate::image::{ImageBuffer, Rgb};
 use crate::lightsource::Lightsource;
-use crate::shape::Intersectable;
+use crate::shape::{Intersectable, Vec3};
+use crate::skybox::Skybox;
 use crate::texture_map::TextureMap;
 
 use sdl2::pixels::Color;
 use sdl2::rect::Point;
 
 use scoped_threadpool::Pool;
-use std::sync::{Arc, Mutex};
 
 pub struct Thruster<'a> {
 	pub camera: PerspectiveCamera,
 	pub shapes: Vec<Box<dyn Intersectable + Sync + 'a>>,
 	pub lights: Vec<Box<dyn Lightsource + Sync + 'a>>,
 	pub texture_map: TextureMap,
+	pub skybox: Skybox,
 }
 
 impl Thruster<'_> {
@@ -59,7 +60,7 @@ impl Thruster<'_> {
 			for (_, row) in buf.enumerate_rows_mut() {
 				scoped.execute(move || {
 					for (x, y, pix) in row {
-						print!("\r{:.3}%", f64::from(y) / f64::from(h) * 100.0);
+						// print!("\r{:.3}%", f64::from(y) / h * 100.0);
 						let ray = self
 							.camera
 							.project_ray((f64::from(x), f64::from(y)), (w, h));
@@ -67,7 +68,11 @@ impl Thruster<'_> {
 						if let Some(color) = ray.color_function(intersections, self) {
 							*pix = Rgb([color.x as u8, color.y as u8, color.z as u8]);
 						} else {
-							*pix = Rgb([0, 0, 0]);
+							let color = self
+								.skybox
+								.calc_color(self, ray.direction)
+								.unwrap_or(Vec3::ORIGIN);
+							*pix = Rgb([color.x as u8, color.y as u8, color.z as u8]);
 						}
 					}
 				})
@@ -77,6 +82,7 @@ impl Thruster<'_> {
 		buf
 	}
 
+	#[allow(dead_code)]
 	pub fn render(
 		&self,
 		canvas: &mut sdl2::render::Canvas<sdl2::video::Window>,

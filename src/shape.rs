@@ -6,7 +6,7 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/19 18:17:32 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/26 00:05:10 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/26 22:45:14 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -127,6 +127,10 @@ impl Vec3 {
 			self.z * other.x - self.x * other.z,
 			self.x * other.y - self.y * other.x,
 		)
+	}
+
+	pub fn map_all(self, f: &impl Fn(f64) -> f64) -> Self {
+		Vec3::new(f(self.x), f(self.y), f(self.z))
 	}
 }
 
@@ -251,21 +255,22 @@ impl Ray {
 			diff_color = diff_color + orig_color * light.luminosity_at(scene, &closest.0);
 		}
 		let refl_color = {
-			if self.level <= 0 {
+			if self.level == 0 || mat.c_reflection <= 0.0 {
 				Vec3::ORIGIN
 			} else {
-				if mat.c_reflection <= 0.0 {
-					Vec3::ORIGIN
-				} else {
-					let reflection_dir = self.direction
-						- (self.direction.dot(&closest.0.normal) * 2.0) * closest.0.normal;
-					let ray = Ray {
-						origin: closest.0.origin,
-						direction: reflection_dir,
-						level: self.level - 1,
-					};
-					ray.color_function(ray.cast(scene), scene)
-						.or(Some(Vec3::ORIGIN))?
+				let reflection_dir = self.direction
+					- (self.direction.dot(&closest.0.normal) * 2.0) * closest.0.normal;
+				let ray = Ray {
+					origin: closest.0.origin,
+					direction: reflection_dir,
+					level: self.level - 1,
+				};
+				match ray.color_function(ray.cast(scene), scene) {
+					Some(color) => color,
+					_ => scene
+						.skybox
+						.calc_color(scene, ray.direction)
+						.unwrap_or(Vec3::ORIGIN),
 				}
 			}
 		};

@@ -6,7 +6,7 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/19 18:06:37 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/26 00:12:10 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/27 00:23:28 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,16 +20,18 @@ mod lightsource;
 mod material;
 mod parser;
 mod shape;
+mod skybox;
 mod texture_map;
 mod thruster;
 
-pub const SCREEN_WIDTH: f64 = 1280.0;
-pub const SCREEN_HEIGHT: f64 = 720.0;
+pub const SCREEN_WIDTH: f64 = 800.0;
+pub const SCREEN_HEIGHT: f64 = 450.0;
 
 use camera::PerspectiveCamera;
 use lightsource::PointLight;
 use material::{MatTex, Material};
 use shape::{Intersectable, Plane, Sphere, Triangle, Vec2, Vec3, Vertex};
+use skybox::Skybox;
 
 #[allow(unused_imports)]
 use sdl2::event::Event;
@@ -54,19 +56,23 @@ pub fn main() -> std::result::Result<(), String> {
 
 	let mut texture_map = texture_map::TextureMap::new();
 
-	let checker_handle = texture_map.load_image_from_file("checker.png")?;
-	let earth_handle = texture_map.load_image_from_file("earth.png")?;
-	let bottle_handle = texture_map.load_image_from_file("bottle.png")?;
-	let ammo_handle = texture_map.load_image_from_file("ammobox.png")?;
+	let checker_handle = texture_map.load_image_from_file("./textures/checker.png")?;
+	let earth_handle = texture_map.load_image_from_file("./textures/earth.png")?;
+	let bottle_handle = texture_map.load_image_from_file("./textures/bottle.png")?;
+
+	let skybox = Skybox::new([
+		texture_map.load_image_from_file("./skybox/miramar/miramar_rt.png")?,
+		texture_map.load_image_from_file("./skybox/miramar/miramar_lf.png")?,
+		texture_map.load_image_from_file("./skybox/miramar/miramar_up.png")?,
+		texture_map.load_image_from_file("./skybox/miramar/miramar_dn.png")?,
+		texture_map.load_image_from_file("./skybox/miramar/miramar_ft.png")?,
+		texture_map.load_image_from_file("./skybox/miramar/miramar_bk.png")?,
+	]);
 
 	let checker_mattex = MatTex::from_handle(checker_handle, Vec2::new(1000.0, 1000.0));
 	let earth_mattex = MatTex::from_handle(earth_handle, Vec2::new(1.0, 1.0));
-	let bottle_mattex = MatTex::from_handle(bottle_handle, Vec2::new(1.0, -1.0));
-	let ammo_mattex = MatTex::from_handle(ammo_handle, Vec2::new(1.0, -1.0));
 	let plane_mat = Material::reflective(checker_mattex);
 	let earth_mat = Material::reflective(earth_mattex);
-	let bottle_mat = Material::diffuse(bottle_mattex);
-	let ammo_mat = Material::diffuse(ammo_mattex);
 
 	let red = MatTex::Color(Vec3::new(255.0, 0.0, 0.0));
 	let red_mat = Material {
@@ -76,20 +82,30 @@ pub fn main() -> std::result::Result<(), String> {
 		texture: red,
 	};
 
-	let obj = parser::parse("./ammo.obj".to_string());
+	let obj = parser::parse("./objs/teapot.obj".to_string());
 	let mut scene: Vec<Box<dyn Intersectable + Sync>> = Vec::new();
 	for (avt, bvt, cvt) in obj.triangles.iter() {
 		scene.push(Box::new(Triangle {
 			a: Vertex::from_parsed(avt),
 			b: Vertex::from_parsed(bvt),
 			c: Vertex::from_parsed(cvt),
-			material: ammo_mat,
+			material: red_mat,
 		}))
 	}
 	scene.extend::<Vec<Box<dyn Intersectable + Sync>>>(vec![
 		Box::new(Plane {
 			origin: Vec3::new(0.0, -1.0, 0.0),
 			normal: Vec3::new(0.0, 1.0, 0.0),
+			material: plane_mat,
+		}),
+		Box::new(Sphere {
+			origin: Vec3::new(-50.0, 100.0, 50.0),
+			radius: 50.0,
+			material: red_mat,
+		}),
+		Box::new(Sphere {
+			origin: Vec3::new(0.0, 100.0, 25.0),
+			radius: 25.0,
 			material: plane_mat,
 		}),
 		Box::new(Sphere {
@@ -107,11 +123,13 @@ pub fn main() -> std::result::Result<(), String> {
 			color: Vec3::new(255.0, 255.0, 255.0),
 		})],
 		texture_map,
+		skybox,
 	};
 
 	thruster
-		.screenshot("screenshot.png", 3840.0, 2160.0)
-		// 	// .screenshot("screenshot.png", 800.0, 450.0)
+		.screenshot("screenshot.png", 15360.0, 8640.0)
+		// .screenshot("screenshot.png", 3840.0, 2160.0)
+		// .screenshot("screenshot.png", 800.0, 450.0)
 		// .screenshot("screenshot.png", 1920.0, 1080.0)
 		.map_err(|_| "Failed to take screenshot")?;
 
