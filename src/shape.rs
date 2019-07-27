@@ -6,9 +6,11 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/19 18:17:32 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/26 22:45:14 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/27 16:10:58 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
+
+use image::{Pixel, Rgb};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Vec2 {
@@ -132,6 +134,32 @@ impl Vec3 {
 	pub fn map_all(self, f: &impl Fn(f64) -> f64) -> Self {
 		Vec3::new(f(self.x), f(self.y), f(self.z))
 	}
+
+	pub fn from_rgb(rgb: Rgb<u8>) -> Self {
+		if let [r, g, b] = rgb.channels() {
+			Vec3::new(f64::from(*r), f64::from(*g), f64::from(*b))
+		} else {
+			Vec3::ORIGIN
+		}
+	}
+
+	pub fn to_rgb(self) -> Rgb<u8> {
+		Rgb([self.x as u8, self.y as u8, self.z as u8])
+	}
+
+	pub fn rotate(self, theta: Vec3) -> Self {
+		let v = Vec3 {
+			x: self.x,
+			y: self.y * theta.x.cos() + self.z * theta.x.sin(),
+			z: -self.z * theta.x.sin() + self.z * theta.x.cos(),
+		};
+		let w = Vec3 {
+			x: v.x * theta.y.cos() + v.z * theta.y.sin(),
+			y: v.y,
+			z: -v.x * theta.y.sin() + theta.y.cos() * v.z,
+		};
+		w
+	}
 }
 
 impl Clampable for Vec3 {
@@ -152,10 +180,12 @@ pub struct Vertex {
 }
 
 impl Vertex {
+	#[allow(dead_code)]
 	pub fn new(origin: Vec3, normal: Vec3, uv: Vec2) -> Self {
 		Self { origin, normal, uv }
 	}
 
+	#[allow(dead_code)]
 	pub fn from_parsed(vertex: &crate::parser::Vertex3) -> Self {
 		Self {
 			origin: Vec3::new(vertex.pos.x, vertex.pos.y, vertex.pos.z),
@@ -165,21 +195,12 @@ impl Vertex {
 	}
 }
 
-type Shape<'a> = Box<dyn Intersectable + 'a + Sync>;
+pub type Shape<'a> = Box<dyn Intersectable + 'a + Sync>;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Ray {
-	/*
-		** Where the ray is cast from
-		*/
 	pub origin: Vec3,
-
-	/*
-		** (NORMALIZED)
-		** In what direction the ray is to be cast
-		*/
 	pub direction: Vec3,
-
 	pub level: u8,
 }
 
@@ -227,7 +248,6 @@ impl Ray {
 			}
 		}
 		use crate::material::MatTex;
-		use image::Pixel;
 		let mat = closest.1.mat();
 		let inter = closest.0;
 		let orig_color = match &mat.texture {
@@ -235,19 +255,12 @@ impl Ray {
 			MatTex::Texture { handle, scaling } => {
 				let text = scene.texture_map.get_image_by_handle(*handle).unwrap();
 
-				let channels = text
-					.get_pixel(
-						(inter.text_pos.x * f64::from(text.width()) / scaling.x) as u32
-							% text.width(),
-						(inter.text_pos.y * f64::from(text.height()) / scaling.y) as u32
-							% text.height(),
-					)
-					.channels();
-				Vec3::new(
-					f64::from(channels[0]),
-					f64::from(channels[1]),
-					f64::from(channels[2]),
-				)
+				let pixel = text.get_pixel(
+					(inter.text_pos.x * f64::from(text.width()) / scaling.x) as u32 % text.width(),
+					(inter.text_pos.y * f64::from(text.height()) / scaling.y) as u32
+						% text.height(),
+				);
+				Vec3::from_rgb(*pixel)
 			}
 		};
 		let mut diff_color = Vec3::ORIGIN;
@@ -356,6 +369,7 @@ impl Intersectable for Plane {
 	}
 }
 
+#[allow(dead_code)]
 pub struct Triangle {
 	pub a: Vertex,
 	pub b: Vertex,

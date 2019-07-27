@@ -6,7 +6,7 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/26 21:52:17 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/27 00:01:59 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/27 16:21:51 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@ use crate::shape::{Vec2, Vec3};
 use crate::texture_map::TextureHandle;
 
 pub struct Skybox {
+	/* +x, -x, +y, -y, +z, -z */
 	pub handles: [TextureHandle; 6],
 }
 
@@ -53,14 +54,10 @@ impl Skybox {
 	pub fn calc_color(&self, scene: &crate::thruster::Thruster, v: Vec3) -> Option<Vec3> {
 		let (handle, uv) = self.get_uv(v)?;
 		let img = scene.texture_map.get_image_by_handle(handle).ok()?;
-		let channels = img.get_pixel(
+		let rgb = img.get_pixel(
 			((1.0 - uv.x) * f64::from(img.width())) as u32 % img.width(),
 			((1.0 - uv.y) * f64::from(img.height())) as u32 % img.height(),
 		);
-		Some(Vec3::new(
-			f64::from(channels[0]),
-			f64::from(channels[1]),
-			f64::from(channels[2]),
-		))
+		Some(Vec3::from_rgb(*rgb))
 	}
 }

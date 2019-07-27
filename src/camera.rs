@@ -6,7 +6,7 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/19 18:23:53 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/25 21:29:26 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/27 16:14:44 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,7 @@ pub struct PerspectiveCamera {
 }
 
 impl PerspectiveCamera {
+	#[allow(dead_code)]
 	pub fn new(position: Vec3, aspect_ratio: f64) -> Self {
 		PerspectiveCamera {
 			position,
@@ -33,11 +34,15 @@ impl PerspectiveCamera {
 		}
 	}
 
+	#[allow(dead_code)]
 	pub fn translate(&mut self, v3: Vec3) {
-		self.position.x += (self.rotation.y + std::f64::consts::FRAC_PI_2).sin() * v3.x
-			+ self.rotation.y.sin() * v3.z;
+		self.position.x += self.rotation.y.cos() * v3.x - self.rotation.y.sin() * v3.z;
 		self.position.y += v3.y;
-		self.position.z += -self.rotation.y.cos() * v3.z + self.rotation.y.sin() * v3.x;
+		self.position.z += -self.rotation.y.cos() * v3.z - self.rotation.y.sin() * v3.x;
+	}
+
+	pub fn rotate(&mut self, v3: Vec3) {
+		self.rotation = self.rotation + v3;
 	}
 }
 
@@ -49,9 +54,11 @@ impl Camera for PerspectiveCamera {
 		let py =
 			(1.0 - 2.0 * ((sy + 0.5) / h)) * (self.fov / 2.0 * std::f64::consts::PI / 180.0).tan();
 
+		let direction = Vec3::new(px, py, 1.0).normalized().rotate(self.rotation);
+
 		Ray {
 			origin: self.position,
-			direction: Vec3::new(px, py, 1.0).normalized(),
+			direction,
 			level: 5,
 		}
 	}

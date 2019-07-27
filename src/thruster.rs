@@ -6,7 +6,7 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/21 17:25:15 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/26 23:16:13 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/07/27 17:33:25 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,9 +15,10 @@ use std::time::SystemTime;
 use crate::{SCREEN_HEIGHT, SCREEN_WIDTH};
 
 use crate::camera::{Camera, PerspectiveCamera};
+use crate::dither::{ColorPalette, Dither};
 use crate::image::{ImageBuffer, Rgb};
 use crate::lightsource::Lightsource;
-use crate::shape::{Intersectable, Vec3};
+use crate::shape::{Intersectable, Shape, Vec3};
 use crate::skybox::Skybox;
 use crate::texture_map::TextureMap;
 
@@ -28,7 +29,7 @@ use scoped_threadpool::Pool;
 
 pub struct Thruster<'a> {
 	pub camera: PerspectiveCamera,
-	pub shapes: Vec<Box<dyn Intersectable + Sync + 'a>>,
+	pub shapes: Vec<Shape<'a>>,
 	pub lights: Vec<Box<dyn Lightsource + Sync + 'a>>,
 	pub texture_map: TextureMap,
 	pub skybox: Skybox,
@@ -79,6 +80,11 @@ impl Thruster<'_> {
 			}
 		});
 
+		// let dither = Dither {
+		// 	palette: ColorPalette::vga_palette(),
+		// };
+
+		// dither.dither_image(buf)
 		buf
 	}
 
@@ -86,8 +92,15 @@ impl Thruster<'_> {
 	pub fn render(
 		&self,
 		canvas: &mut sdl2::render::Canvas<sdl2::video::Window>,
+		output: Option<String>,
 	) -> Result<(), String> {
 		let upscaled = self.render_to_buffer(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+		if let Some(filename) = output {
+			upscaled
+				.save_with_format(filename, image::ImageFormat::PNG)
+				.map_err(|_| "Could not save screen")?;
+		}
 
 		for y in 0..(SCREEN_HEIGHT as usize) {
 			for x in 0..(SCREEN_WIDTH as usize) {
