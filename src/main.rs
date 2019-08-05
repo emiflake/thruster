@@ -6,239 +6,214 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/19 18:06:37 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/27 17:36:40 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/08/05 18:23:28 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
 extern crate image;
 extern crate rand;
 extern crate scoped_threadpool;
-extern crate sdl2;
+
+extern crate glutin;
+#[macro_use]
+extern crate glium;
+
+#[macro_use]
+extern crate imgui;
+extern crate imgui_glium_renderer;
 
 mod camera;
 mod dither;
 mod lightsource;
+mod make_world;
 mod material;
 mod parser;
 mod shape;
 mod skybox;
+mod support;
 mod texture_map;
 mod thruster;
 
-pub const SCREEN_WIDTH: f64 = 800.0;
-pub const SCREEN_HEIGHT: f64 = 450.0;
+use glium::Surface;
+use glutin::*;
 
-use camera::PerspectiveCamera;
-use lightsource::PointLight;
-use material::{MatTex, Material};
-use shape::{Intersectable, Plane, Sphere, Triangle, Vec2, Vec3, Vertex};
-use skybox::Skybox;
+use imgui::Context;
+use imgui::*;
+use imgui_winit_support::{HiDpiMode, WinitPlatform};
 
 #[allow(unused_imports)]
 use sdl2::event::Event;
 #[allow(unused_imports)]
 use sdl2::keyboard::Keycode;
+use shape::Vec3;
 
+use std::collections::VecDeque;
+use std::thread;
 #[allow(unused_imports)]
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 pub fn main() -> std::result::Result<(), String> {
-	let sdl_context = sdl2::init().unwrap();
-	let video_subsystem = sdl_context.video().unwrap();
+	let mut event_loop = glutin::EventsLoop::new();
+	let wb =
+		glutin::WindowBuilder::new().with_dimensions(glutin::dpi::LogicalSize::new(1280.0, 720.0));
+	let cb = glutin::ContextBuilder::new().with_vsync(true);
+	let display = glium::Display::new(wb, cb, &event_loop).unwrap();
+	let mut imgui = Context::create();
+	imgui.set_ini_filename(None);
+	let mut platform = WinitPlatform::init(&mut imgui);
+	{
+		let gl_window = display.gl_window();
+		let window = gl_window.window();
+		platform.attach_window(imgui.io_mut(), &window, HiDpiMode::Rounded);
+	}
 
-	#[allow(dead_code)]
-	let window = video_subsystem
-		.window(
-			"Thruster Raytracer",
-			SCREEN_WIDTH as u32,
-			SCREEN_HEIGHT as u32,
-		)
-		.position_centered()
-		.build()
-		.unwrap();
+	// Raw image rendering output
+	let program = support::get_program(&display);
+	let (vertex_buffer, index_buffer) = support::get_buffers(&display);
 
-	sdl_context.mouse().set_relative_mouse_mode(true);
+	// * World setup * //
+	let mut thruster = make_world::make_world()?;
+	let mut image = thruster.render_to_buffer(1280.0, 720.0);
+	let mut image_dimensions = image.dimensions();
+	let mut raw_pixels: Vec<u8> = image.into_raw();
 
-	let mut texture_map = texture_map::TextureMap::new();
+	// * Variables during looping * //
+	let mut renderer = imgui_glium_renderer::Renderer::init(&mut imgui, &display).unwrap();
+	let mut last_frame = Instant::now();
+	let mut cursor_pos = (0.0, 0.0);
+	let mut closed = false;
+	let mut dimensions: [i32; 2] = [10, 10];
+	let mut delays = VecDeque::new();
+	while !closed {
+		let gl_window = display.gl_window();
+		let window = gl_window.window();
 
-	let checker_handle = texture_map.load_image_from_file("./textures/checker.png")?;
-	let earth_handle = texture_map.load_image_from_file("./textures/earth.png")?;
+		let now = Instant::now();
+		let delta = now - last_frame;
+		let delta_time = delta.as_secs() as f32 + delta.subsec_nanos() as f32 / 1_000_000_000.0;
 
-	let skybox = Skybox::new([
-		texture_map.load_image_from_file("./skybox/miramar/miramar_bk.png")?,
-		texture_map.load_image_from_file("./skybox/miramar/miramar_ft.png")?,
-		texture_map.load_image_from_file("./skybox/miramar/miramar_up.png")?,
-		texture_map.load_image_from_file("./skybox/miramar/miramar_dn.png")?,
-		texture_map.load_image_from_file("./skybox/miramar/miramar_rt.png")?,
-		texture_map.load_image_from_file("./skybox/miramar/miramar_lf.png")?,
-	]);
-	// let skybox = Skybox::new([
-	// 	texture_map.load_image_from_file("./skybox/Yokohama3/negx.png")?,
-	// 	texture_map.load_image_from_file("./skybox/Yokohama3/posx.png")?,
-	// 	texture_map.load_image_from_file("./skybox/Yokohama3/posy.png")?,
-	// 	texture_map.load_image_from_file("./skybox/Yokohama3/negy.png")?,
-	// 	texture_map.load_image_from_file("./skybox/Yokohama3/posz.png")?,
-	// 	texture_map.load_image_from_file("./skybox/Yokohama3/negz.png")?,
-	// ]);
-
-	let checker_mattex = MatTex::from_handle(checker_handle, Vec2::new(1000.0, 1000.0));
-	let earth_mattex = MatTex::from_handle(earth_handle, Vec2::new(1.0, 1.0));
-	let plane_mat = Material::reflective(checker_mattex);
-	let earth_mat = Material::reflective(earth_mattex);
-
-	let red = MatTex::Color(Vec3::new(255.0, 0.0, 0.0));
-	let red_mat = Material {
-		c_diffuse: 0.7,
-		c_reflection: 0.3,
-		c_ambient: 0.0,
-		texture: red,
-	};
-	let black = MatTex::Color(Vec3::new(255.0, 255.0, 255.0));
-	let black_mat = Material {
-		c_diffuse: 0.7,
-		c_reflection: 0.3,
-		c_ambient: 0.0,
-		texture: black,
-	};
-	let green = MatTex::Color(Vec3::new(0.0, 255.0, 0.0));
-	let green_mat = Material {
-		c_diffuse: 0.7,
-		c_reflection: 0.3,
-		c_ambient: 0.0,
-		texture: green,
-	};
-
-	let obj = parser::parse("./objs/teapot.obj".to_string());
-	let mut scene: Vec<Box<dyn Intersectable + Sync>> = Vec::new();
-	// for (avt, bvt, cvt) in obj.triangles.iter() {
-	// 	scene.push(Box::new(Triangle {
-	// 		a: Vertex::from_parsed(avt),
-	// 		b: Vertex::from_parsed(bvt),
-	// 		c: Vertex::from_parsed(cvt),
-	// 		material: red_mat,
-	// 	}))
-	// }
-	scene.extend::<Vec<Box<dyn Intersectable + Sync>>>(vec![
-		Box::new(Plane {
-			origin: Vec3::new(0.0, -1.0, 0.0),
-			normal: Vec3::new(0.0, 1.0, 0.0),
-			material: plane_mat,
-		}),
-		Box::new(Sphere {
-			origin: Vec3::new(-75.0, 100.0, 50.0),
-			radius: 50.0,
-			material: red_mat,
-		}),
-		Box::new(Sphere {
-			origin: Vec3::new(0.0, 100.0, 25.0),
-			radius: 25.0,
-			material: green_mat,
-		}),
-		Box::new(Sphere {
-			origin: Vec3::new(75.0, 80.0, 50.0),
-			radius: 50.0,
-			material: earth_mat,
-		}),
-	]);
-
-	#[allow(unused_mut)]
-	let mut thruster = thruster::Thruster {
-		camera: PerspectiveCamera::new(Vec3::new(0.0, 50.0, -200.0), SCREEN_WIDTH / SCREEN_HEIGHT),
-		shapes: scene,
-		lights: vec![Box::new(PointLight {
-			origin: Vec3::new(1.0, 250.0, -30.0),
-			color: Vec3::new(255.0, 255.0, 255.0),
-		})],
-		texture_map,
-		skybox,
-	};
-
-	thruster
-		// .screenshot("screenshot.png", 15360.0, 8640.0)
-		// .screenshot("screenshot.png", 3840.0, 2160.0)
-		// .screenshot("screenshot.png", 1920.0, 1080.0)
-		.screenshot("screenshot.png", 800.0, 450.0)
-		// .screenshot("screenshot.png", 320.0, 200.0)
-		.map_err(|_| "Failed to take screenshot")?;
-
-	let mut canvas = window.into_canvas().build().unwrap();
-
-	canvas.clear();
-	canvas.present();
-	let mut event_pump = sdl_context.event_pump().unwrap();
-	let mut before = std::time::SystemTime::now();
-	let mut last_mouse_pos = (0, 0);
-	let mut i = 0;
-
-	'running: loop {
-		let delta_time: u128 = before.elapsed().unwrap().as_millis();
-		before = std::time::SystemTime::now();
-		for event in event_pump.poll_iter() {
+		// * Delay counting, for profiler * //
+		delays.push_back(delta_time);
+		if delays.len() > 100 {
+			delays.pop_front();
+		}
+		// Event handling
+		event_loop.poll_events(|event| {
+			platform.handle_event(imgui.io_mut(), &window, &event);
 			match event {
-				Event::Quit { .. }
-				| Event::KeyDown {
-					keycode: Some(Keycode::Escape),
-					..
-				} => break 'running,
-				Event::KeyDown { keycode, .. } => match keycode {
-					Some(Keycode::Equals) => thruster.camera.fov += 5.0,
-					Some(Keycode::Minus) => thruster.camera.fov -= 5.0,
-					Some(Keycode::Space) => {
-						thruster.screenshot("screenshot.png", 7680.0, 4320.0)?
+				glutin::Event::WindowEvent { event, .. } => match event {
+					glutin::WindowEvent::KeyboardInput {
+						input:
+							glutin::KeyboardInput {
+								state,
+								virtual_keycode: Some(kc),
+								..
+							},
+						..
+					} => match state {
+						ElementState::Pressed => {
+							if kc == glutin::VirtualKeyCode::Escape {
+								closed = true;
+							}
+						}
+						ElementState::Released => {}
+					},
+					glutin::WindowEvent::MouseInput { state, button, .. } => match state {
+						ElementState::Pressed => {}
+						ElementState::Released => {}
+					},
+					glutin::WindowEvent::CursorMoved { position, .. } => {
+						cursor_pos.0 = position.x;
+						cursor_pos.1 = position.y;
 					}
-					_ => {}
+					glutin::WindowEvent::CloseRequested => closed = true,
+					_ => (),
 				},
-				_ => {}
+				_ => (),
 			}
+		});
+
+		// IMGUI PREPARE
+		let io = imgui.io_mut();
+		last_frame = io.update_delta_time(last_frame);
+		let mut ui = imgui.frame();
+		imgui::Window::new(&ui, im_str!("Profiler"))
+			.size([400.0, 125.0], Condition::FirstUseEver)
+			.position([50.0, 200.0], Condition::FirstUseEver)
+			.build(|| {
+				ui.text(format!("FPS: {:.2}/{:.5}ms", 1.0 / delta_time, delta_time));
+
+				let lines: Vec<f32> = delays.iter().map(|x| *x).collect();
+				ui.plot_lines(im_str!("Delay (ms)"), lines.as_ref())
+					.graph_size([300.0, 75.0])
+					.build();
+			});
+
+		imgui::Window::new(&ui, im_str!("Render Controls"))
+			.size([300.0, 150.0], Condition::FirstUseEver)
+			.build(|| {
+				ui.input_int(im_str!("Width"), &mut dimensions[0]).build();
+				ui.input_int(im_str!("Height"), &mut dimensions[1]).build();
+				if dimensions[0] <= 0 {
+					dimensions[0] = 640;
+				}
+				if dimensions[1] <= 0 {
+					dimensions[1] = 480;
+				}
+				if imgui::Ui::button(&ui, im_str!("Take Screenshot"), [150.0, 25.0]) {
+					thruster
+						.screenshot(
+							"screenshot.png",
+							f64::from(dimensions[0]),
+							f64::from(dimensions[1]),
+						)
+						.expect("Could not take screenshot");
+				}
+			});
+
+		if imgui::Ui::button(&ui, im_str!("Rerender"), [150.0, 25.0]) {
+			image = thruster.render_to_buffer(1280.0, 720.0);
+			image_dimensions = image.dimensions();
+			raw_pixels = image.into_raw();
+		}
+		if imgui::Ui::button(&ui, im_str!("Move left"), [150.0, 25.0]) {
+			thruster.camera.position = thruster.camera.position + Vec3::new(1.0, 0.0, 0.0);
 		}
 
-		let keys: std::collections::HashSet<Keycode> = event_pump
-			.keyboard_state()
-			.pressed_scancodes()
-			.filter_map(Keycode::from_scancode)
-			.collect();
+		let mut target = display.draw();
+		target.clear_color_srgb(0.0, 0.0, 0.0, 1.0);
 
-		let mouse_state = event_pump.mouse_state();
-		let mouse_pos = (mouse_state.x(), mouse_state.y());
-		let delta_mouse = (
-			last_mouse_pos.0 - mouse_pos.0,
-			last_mouse_pos.1 - mouse_pos.1,
-		);
-		last_mouse_pos = mouse_pos;
+		let image =
+			glium::texture::RawImage2d::from_raw_rgba_reversed(&raw_pixels, image_dimensions);
+		let opengl_texture = glium::texture::CompressedSrgbTexture2d::new(&display, image).unwrap();
 
-		thruster.camera.rotate(Vec3::new(
-			0.0,
-			-f64::from(delta_mouse.0) / 100.0,
-			f64::from(delta_mouse.1) / 100.0,
-		));
-
-		let speed = if keys.contains(&Keycode::LShift) {
-			10f64 * (delta_time as u64 as f64) / 100f64
-		} else {
-			1f64 * (delta_time as u64 as f64) / 100f64
+		let uniforms = uniform! {
+			matrix: [
+				[1.0, 0.0, 0.0, 0.0],
+				[0.0, 1.0, 0.0, 0.0],
+				[0.0, 0.0, 1.0, 0.0],
+				[0.0, 0.0, 0.0, 1.0f32]
+			],
+			tex: &opengl_texture
 		};
+		target
+			.draw(
+				&vertex_buffer,
+				&index_buffer,
+				&program,
+				&uniforms,
+				&Default::default(),
+			)
+			.unwrap();
 
-		thruster.camera.rotate(Vec3::new(
-			0.0,
-			f64::from(keys.contains(&Keycode::L) as i32) / 200.0,
-			0.0,
-		));
+		// IMGUI RENDER
+		let draw_data = ui.render();
+		renderer
+			.render(&mut target, draw_data)
+			.expect("Could not render imgui");
 
-		thruster.camera.translate(Vec3::new(
-			f64::from(keys.contains(&Keycode::A) as i32) * -speed
-				+ f64::from(keys.contains(&Keycode::D) as i32) * speed,
-			f64::from(keys.contains(&Keycode::Q) as i32) * -speed
-				+ f64::from(keys.contains(&Keycode::E) as i32) * speed,
-			f64::from(keys.contains(&Keycode::W) as i32) * -speed
-				+ f64::from(keys.contains(&Keycode::S) as i32) * speed,
-		));
-
-		thruster.render(&mut canvas, Some(format!("screen/{}.png", i)))?;
-
-		i += 1u32;
-
-		canvas.present();
-		::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
+		target.finish().expect("Failed to swap buffers");
+		thread::sleep(std::time::Duration::from_millis(16));
 	}
 	Ok(())
 }
