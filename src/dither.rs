@@ -10,7 +10,9 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-use crate::shape::Vec3;
+#![allow(dead_code)]
+
+use crate::algebra::Vec3;
 use image::{ImageBuffer, Rgba};
 #[derive(Clone)]
 pub struct ColorPalette(pub Vec<Vec3>);

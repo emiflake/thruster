@@ -10,7 +10,8 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-use crate::shape::{Ray, Vec3};
+use crate::algebra::Vec3;
+use crate::shape::Ray;
 
 pub trait Camera {
     fn project_ray(&self, screen_pos: (f64, f64), screen_dim: (f64, f64)) -> Ray;

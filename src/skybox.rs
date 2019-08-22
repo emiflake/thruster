@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-use crate::shape::{Vec2, Vec3};
+use crate::algebra::{Vec2, Vec3};
 use crate::texture_map::TextureHandle;
 
 pub struct Skybox {

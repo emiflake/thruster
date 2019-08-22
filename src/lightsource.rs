@@ -10,7 +10,8 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-use crate::shape::{Intersection, Ray, Vec3};
+use crate::shape::{Intersection, Ray};
+use crate::algebra::Vec3;
 
 pub trait Lightsource {
     fn luminosity_at(&self, scene: &crate::thruster::Thruster, intersection: &Intersection) -> f64;

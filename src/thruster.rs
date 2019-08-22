@@ -13,10 +13,10 @@
 use std::time::SystemTime;
 
 use crate::camera::{Camera, PerspectiveCamera};
-use crate::dither::{ColorPalette, Dither};
 use crate::image::{ImageBuffer, Rgba};
 use crate::lightsource::Lightsource;
-use crate::shape::{Intersectable, Shape, Vec3};
+use crate::shape::{Shape};
+use crate::algebra::Vec3;
 use crate::skybox::Skybox;
 use crate::texture_map::TextureMap;
 
@@ -74,6 +74,7 @@ impl Thruster<'_> {
 			}
 		});
 
+        // use crate::dither::{ColorPalette, Dither};
 		// let dither = Dither {
 			// palette: ColorPalette::vga_palette(),
 		// };
