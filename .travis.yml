@@ -1,0 +1,5 @@
+# For now, we'll just have Continuous Building on Travis
+# TODO: Actually have testing
+# TODO: Add caching
+
+language: rust
