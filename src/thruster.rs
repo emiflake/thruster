@@ -6,7 +6,7 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/21 17:25:15 by nmartins       #+#    #+#                */
-/*   Updated: 2019/08/05 16:50:32 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/08/12 15:49:43 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -75,7 +75,7 @@ impl Thruster<'_> {
 		});
 
 		// let dither = Dither {
-		// 	palette: ColorPalette::vga_palette(),
+			// palette: ColorPalette::vga_palette(),
 		// };
 
 		// dither.dither_image(buf)

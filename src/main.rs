@@ -6,7 +6,7 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/19 18:06:37 by nmartins       #+#    #+#                */
-/*   Updated: 2019/08/05 18:23:28 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/08/10 15:41:04 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,7 @@ extern crate imgui_glium_renderer;
 
 mod camera;
 mod dither;
+mod key_state;
 mod lightsource;
 mod make_world;
 mod material;
@@ -73,16 +74,14 @@ pub fn main() -> std::result::Result<(), String> {
 
 	// * World setup * //
 	let mut thruster = make_world::make_world()?;
-	let mut image = thruster.render_to_buffer(1280.0, 720.0);
-	let mut image_dimensions = image.dimensions();
-	let mut raw_pixels: Vec<u8> = image.into_raw();
+	let mut keystate = key_state::Keystate::default();
 
 	// * Variables during looping * //
 	let mut renderer = imgui_glium_renderer::Renderer::init(&mut imgui, &display).unwrap();
 	let mut last_frame = Instant::now();
 	let mut cursor_pos = (0.0, 0.0);
 	let mut closed = false;
-	let mut dimensions: [i32; 2] = [10, 10];
+	let mut dimensions: [i32; 2] = [3840, 2160];
 	let mut delays = VecDeque::new();
 	while !closed {
 		let gl_window = display.gl_window();
@@ -100,32 +99,10 @@ pub fn main() -> std::result::Result<(), String> {
 		// Event handling
 		event_loop.poll_events(|event| {
 			platform.handle_event(imgui.io_mut(), &window, &event);
+			keystate.handle_event(&event);
+
 			match event {
 				glutin::Event::WindowEvent { event, .. } => match event {
-					glutin::WindowEvent::KeyboardInput {
-						input:
-							glutin::KeyboardInput {
-								state,
-								virtual_keycode: Some(kc),
-								..
-							},
-						..
-					} => match state {
-						ElementState::Pressed => {
-							if kc == glutin::VirtualKeyCode::Escape {
-								closed = true;
-							}
-						}
-						ElementState::Released => {}
-					},
-					glutin::WindowEvent::MouseInput { state, button, .. } => match state {
-						ElementState::Pressed => {}
-						ElementState::Released => {}
-					},
-					glutin::WindowEvent::CursorMoved { position, .. } => {
-						cursor_pos.0 = position.x;
-						cursor_pos.1 = position.y;
-					}
 					glutin::WindowEvent::CloseRequested => closed = true,
 					_ => (),
 				},
@@ -160,7 +137,7 @@ pub fn main() -> std::result::Result<(), String> {
 				if dimensions[1] <= 0 {
 					dimensions[1] = 480;
 				}
-				if imgui::Ui::button(&ui, im_str!("Take Screenshot"), [150.0, 25.0]) {
+				if imgui::Ui::button(&ui, im_str!("Take Screenshot"), [175.0, 50.0]) {
 					thruster
 						.screenshot(
 							"screenshot.png",
@@ -168,17 +145,23 @@ pub fn main() -> std::result::Result<(), String> {
 							f64::from(dimensions[1]),
 						)
 						.expect("Could not take screenshot");
+
+					std::process::Command::new("open")
+						.arg("screenshot.png")
+						.output()
+						.expect("failed to execute process");
 				}
 			});
 
-		if imgui::Ui::button(&ui, im_str!("Rerender"), [150.0, 25.0]) {
-			image = thruster.render_to_buffer(1280.0, 720.0);
-			image_dimensions = image.dimensions();
-			raw_pixels = image.into_raw();
+		if keystate.is_key_down(glutin::VirtualKeyCode::Escape) {
+			closed = true;
 		}
-		if imgui::Ui::button(&ui, im_str!("Move left"), [150.0, 25.0]) {
-			thruster.camera.position = thruster.camera.position + Vec3::new(1.0, 0.0, 0.0);
-		}
+
+		handle_keys(&keystate, &mut thruster);
+
+		let image = thruster.render_to_buffer(640.0, 360.0);
+		let image_dimensions = image.dimensions();
+		let raw_pixels = image.into_raw();
 
 		let mut target = display.draw();
 		target.clear_color_srgb(0.0, 0.0, 0.0, 1.0);
@@ -216,4 +199,38 @@ pub fn main() -> std::result::Result<(), String> {
 		thread::sleep(std::time::Duration::from_millis(16));
 	}
 	Ok(())
+}
+
+pub fn handle_keys(keystate: &key_state::Keystate, mut thruster: &mut thruster::Thruster) {
+	let speed = if keystate.is_key_down(glutin::VirtualKeyCode::LShift) {
+		25.0
+	} else {
+		1.0
+	};
+
+	if keystate.is_key_down(glutin::VirtualKeyCode::A) {
+		thruster.camera.translate(Vec3::new(-speed, 0.0, 0.0));
+	}
+	if keystate.is_key_down(glutin::VirtualKeyCode::D) {
+		thruster.camera.translate(Vec3::new(speed, 0.0, 0.0));
+	}
+	if keystate.is_key_down(glutin::VirtualKeyCode::S) {
+		thruster.camera.translate(Vec3::new(0.0, 0.0, speed));
+	}
+	if keystate.is_key_down(glutin::VirtualKeyCode::W) {
+		thruster.camera.translate(Vec3::new(0.0, 0.0, -speed));
+	}
+	if keystate.is_key_down(glutin::VirtualKeyCode::E) {
+		thruster.camera.translate(Vec3::new(0.0, speed, 0.0));
+	}
+	if keystate.is_key_down(glutin::VirtualKeyCode::Q) {
+		thruster.camera.translate(Vec3::new(0.0, -speed, 0.0));
+	}
+
+	if keystate.is_key_down(glutin::VirtualKeyCode::Left) {
+		thruster.camera.rotate(Vec3::new(0.0, -0.05, 0.0));
+	}
+	if keystate.is_key_down(glutin::VirtualKeyCode::Right) {
+		thruster.camera.rotate(Vec3::new(0.0, 0.05, 0.0));
+	}
 }
