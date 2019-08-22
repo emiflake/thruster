@@ -9,10 +9,6 @@ use imgui::Context;
 use imgui::*;
 use imgui_winit_support::{HiDpiMode, WinitPlatform};
 
-#[allow(unused_imports)]
-use sdl2::event::Event;
-#[allow(unused_imports)]
-use sdl2::keyboard::Keycode;
 use crate::algebra::{Vec3};
 
 use std::thread;
