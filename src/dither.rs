@@ -6,12 +6,14 @@
 /*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2019/07/27 12:39:28 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/27 15:05:43 by nmartins      ########   odam.nl         */
+/*   Updated: 2019/08/05 16:40:29 by nmartins      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
-use crate::shape::Vec3;
-use image::{ImageBuffer, Rgb};
+#![allow(dead_code)]
+
+use crate::algebra::Vec3;
+use image::{ImageBuffer, Rgba};
 #[derive(Clone)]
 pub struct ColorPalette(pub Vec<Vec3>);
 
@@ -75,17 +77,17 @@ pub struct Dither {
 impl Dither {
 	pub fn dither_image(
 		&self,
-		buf: ImageBuffer<Rgb<u8>, Vec<u8>>,
-	) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
+		buf: ImageBuffer<Rgba<u8>, Vec<u8>>,
+	) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
 		let mut new_buf = buf.clone();
 
-		fn add_color(pixel: &mut Rgb<u8>, delta: Vec3) {
-			let curr = Vec3::from_rgb(*pixel);
+		fn add_color(pixel: &mut Rgba<u8>, delta: Vec3) {
+			let curr = Vec3::from_rgba(*pixel);
 			let new = (curr + delta).clamp_as_color();
-			*pixel = new.to_rgb();
+			*pixel = new.to_rgba();
 		}
 
-		fn add_coords(buf: &mut ImageBuffer<Rgb<u8>, Vec<u8>>, x: u32, y: u32, delta: Vec3) {
+		fn add_coords(buf: &mut ImageBuffer<Rgba<u8>, Vec<u8>>, x: u32, y: u32, delta: Vec3) {
 			if x < buf.width() && y < buf.height() {
 				add_color(buf.get_pixel_mut(x, y), delta);
 			}
@@ -94,9 +96,9 @@ impl Dither {
 		for y in 0..buf.height() {
 			for x in 0..buf.width() {
 				let old_pixel = new_buf.get_pixel(x, y);
-				let old_color = Vec3::from_rgb(*old_pixel);
+				let old_color = Vec3::from_rgba(*old_pixel);
 				let new_color = self.palette.nearest_color(old_color);
-				new_buf.put_pixel(x, y, new_color.to_rgb());
+				new_buf.put_pixel(x, y, new_color.to_rgba());
 				let quant_error = old_color - new_color;
 				add_coords(&mut new_buf, x + 1, y, quant_error * 7.0 / 16.0);
 				add_coords(&mut new_buf, x - 1, y + 1, quant_error * 3.0 / 16.0);
