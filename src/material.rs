@@ -41,6 +41,7 @@ pub struct Material {
     pub c_diffuse: f64,
     pub c_ambient: f64,
     pub c_reflection: f64,
+    pub c_transparent: f64,
 }
 
 impl Material {
@@ -51,6 +52,7 @@ impl Material {
             c_diffuse: 0.7,
             c_ambient: 0.3,
             c_reflection: 0.0,
+            c_transparent: 0.0,
         }
     }
 
@@ -60,6 +62,7 @@ impl Material {
             c_diffuse: 0.3,
             c_ambient: 0.0,
             c_reflection: 0.7,
+            c_transparent: 0.0,
         }
     }
 }

@@ -47,6 +47,14 @@ pub fn make_world<'a>() -> Result<thruster::Thruster<'a>, String> {
 		c_diffuse: 0.7,
 		c_reflection: 0.3,
 		c_ambient: 0.0,
+        c_transparent: 0.0,
+		texture: red,
+	};
+    let trans_mat = Material {
+		c_diffuse: 0.0,
+		c_reflection: 0.0,
+		c_ambient: 0.0,
+        c_transparent: 1.0,
 		texture: red,
 	};
 	let black = MatTex::Color(Vec3::new(255.0, 255.0, 255.0));
@@ -54,6 +62,7 @@ pub fn make_world<'a>() -> Result<thruster::Thruster<'a>, String> {
 		c_diffuse: 0.7,
 		c_reflection: 0.3,
 		c_ambient: 0.0,
+        c_transparent: 0.0,
 		texture: black,
 	};
 	let green = MatTex::Color(Vec3::new(0.0, 255.0, 0.0));
@@ -61,24 +70,25 @@ pub fn make_world<'a>() -> Result<thruster::Thruster<'a>, String> {
 		c_diffuse: 0.7,
 		c_reflection: 0.0,
 		c_ambient: 0.3,
+        c_transparent: 0.0,
 		texture: green,
 	};
 
-	let obj = parser::parse("./objs/sphere.obj".to_string());
+	let obj = parser::parse("./objs/teapot.obj".to_string());
 	let mut scene: Vec<Box<dyn Intersectable + Sync>> = Vec::new();
      //for (avt, bvt, cvt) in obj.triangles.iter() {
          //scene.push(Box::new(Triangle {
              //a: Vertex::from_parsed(avt),
              //b: Vertex::from_parsed(bvt),
              //c: Vertex::from_parsed(cvt),
-             //material: red_mat,
+             //material: trans_mat,
          //}))
      //}
 	scene.extend::<Vec<Box<dyn Intersectable + Sync>>>(vec![
 		Box::new(Plane {
 			origin: Vec3::new(0.0, 0.0, 100.0),
-			normal: Vec3::new(0.0, 1.0, -1.0).normalized(),
-			material: wood_mat,
+			normal: Vec3::new(0.0, 1.0, 0.0).normalized(),
+			material: plane_mat,
 		}),
 		// Box::new(Plane {
 		// 	origin: Vec3::new(0.0, 100.0, 100.0),
@@ -101,9 +111,9 @@ pub fn make_world<'a>() -> Result<thruster::Thruster<'a>, String> {
 			material: red_mat,
 		}),
 		Box::new(Sphere {
-			origin: Vec3::new(-75.0, 300.0, 50.0),
+			origin: Vec3::new(-75.0, 100.0, 250.0),
 			radius: 100.0,
-			material: red_mat,
+			material: trans_mat,
 		}),
 		// Box::new(Sphere {
 		// 	origin: Vec3::new(0.0, 100.0, 25.0),

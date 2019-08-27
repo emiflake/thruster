@@ -74,12 +74,12 @@ impl Thruster<'_> {
 			}
 		});
 
-        // use crate::dither::{ColorPalette, Dither};
-		// let dither = Dither {
-			// palette: ColorPalette::vga_palette(),
-		// };
+         //use crate::dither::{ColorPalette, Dither};
+         //let dither = Dither {
+             //palette: ColorPalette::vga_palette(),
+         //};
 
-		// dither.dither_image(buf)
-		buf
+         //dither.dither_image(buf)
+        buf
 	}
 }

@@ -84,6 +84,39 @@ impl Ray {
         for light in scene.lights.iter() {
             diff_color = diff_color + orig_color * light.luminosity_at(scene, &closest.0);
         }
+/*
+float3 refract(float3 i, float3 n, float eta)
+{
+    eta = 2.0f - eta;
+    float cosi = dot(n, i);
+    float3 o = (i * eta - n * (-cosi + eta * cosi));
+    return o;
+}
+ */
+        let refr_color = {
+            if self.level <= 0 || mat.c_transparent <= 0.0 {
+                Vec3::ORIGIN
+            }
+            else {
+                let ior = 1.1;
+                let eta = 2.0 - ior;
+                let cosi = closest.0.normal.dot(&self.direction);
+                let o = self.direction * eta - closest.0.normal * (-cosi + eta * cosi);
+                let ray = Ray {
+                    origin: closest.0.origin - closest.0.normal * 0.01,
+                    direction: o,
+                    level: self.level - 1,
+                };
+                match ray.color_function(ray.cast(scene), scene) {
+                    Some(color) => color,
+                    _ => scene
+                        .skybox
+                        .calc_color(scene, ray.direction)
+                        .unwrap_or(Vec3::ORIGIN),
+                }
+
+            }
+        };
         let refl_color = {
             if self.level == 0 || mat.c_reflection <= 0.0 {
                 Vec3::ORIGIN
@@ -107,7 +140,8 @@ impl Ray {
         Some(
             orig_color.clamp_as_color() * mat.c_ambient
                 + diff_color.clamp_as_color() * mat.c_diffuse
-                + refl_color.clamp_as_color() * mat.c_reflection,
+                + refl_color.clamp_as_color() * mat.c_reflection
+                + refr_color.clamp_as_color() * mat.c_transparent,
         )
     }
 }
@@ -119,6 +153,31 @@ pub struct Sphere {
 
     pub material: Material,
 }
+
+
+/*
+   let l: Vector3 = self.center - ray.origin;
+    let adj = l.dot(&ray.direction);
+    let d2 = l.dot(&l) - (adj * adj);
+    let radius2 = self.radius * self.radius;
+    if d2 > radius2 {
+        return None;
+    }
+    let thc = (radius2 - d2).sqrt();
+    let t0 = adj - thc;
+    let t1 = adj + thc;
+
+    if t0 < 0.0 && t1 < 0.0 {
+        None
+    } else if t0 < 0.0 {
+        Some(t1)
+    } else if t1 < 0.0 {
+        Some(t0)
+    } else {
+        let distance = if t0 < t1 { t0 } else { t1 };
+        Some(distance)
+    }
+*/
 
 impl Intersectable for Sphere {
     fn mat(&self) -> &Material {
@@ -137,8 +196,17 @@ impl Intersectable for Sphere {
         }
         let thc = (self.radius * self.radius - d2).sqrt();
         let t0 = tca - thc;
-        let t1 = tca - thc;
-        let t = t0.max(t1);
+        let t1 = tca + thc;
+        if t0 < 0.0 && t1 < 0.0 {
+            return None;
+        }
+        let t = if t0 < 0.0 {
+                t1
+            } else if t1 < 0.0 {
+                t0
+            } else {
+                t0.min(t1)
+            };
         if t <= 0.0 {
             return None;
         }

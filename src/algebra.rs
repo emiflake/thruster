@@ -54,6 +54,13 @@ impl std::ops::Div<f64> for Vec3 {
     }
 }
 
+impl std::ops::Neg for Vec3 {
+    type Output = Vec3;
+    fn neg(self) -> Vec3 {
+        Vec3::new(-self.x, -self.y, -self.z)
+    }
+}
+
 trait Clampable {
     fn clamp_to(self, min: Self, max: Self) -> Self;
 }
