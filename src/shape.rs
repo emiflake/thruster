@@ -98,7 +98,7 @@ float3 refract(float3 i, float3 n, float eta)
                 Vec3::ORIGIN
             }
             else {
-                let ior = 1.1;
+                let ior = 1.4;
                 let eta = 2.0 - ior;
                 let cosi = closest.0.normal.dot(&self.direction);
                 let o = self.direction * eta - closest.0.normal * (-cosi + eta * cosi);
@@ -124,7 +124,7 @@ float3 refract(float3 i, float3 n, float eta)
                 let reflection_dir = self.direction
                     - (self.direction.dot(&closest.0.normal) * 2.0) * closest.0.normal;
                 let ray = Ray {
-                    origin: closest.0.origin,
+                    origin: closest.0.origin - closest.0.normal * 0.01,
                     direction: reflection_dir,
                     level: self.level - 1,
                 };
