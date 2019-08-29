@@ -12,6 +12,7 @@
 
 use crate::algebra::{Vec2, Vec3};
 use crate::texture_map::TextureHandle;
+use crate::scene::Scene;
 
 pub struct Skybox {
     /* +x, -x, +y, -y, +z, -z */
@@ -51,7 +52,7 @@ impl Skybox {
         }
     }
 
-    pub fn calc_color(&self, scene: &crate::thruster::Thruster, v: Vec3) -> Option<Vec3> {
+    pub fn calc_color(&self, scene: &Scene, v: Vec3) -> Option<Vec3> {
         let (handle, uv) = self.get_uv(v)?;
         let img = scene.texture_map.get_image_by_handle(handle).ok()?;
         let rgb = img.get_pixel(

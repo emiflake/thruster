@@ -3,15 +3,15 @@
 
 use crate::camera::PerspectiveCamera;
 use crate::lightsource::PointLight;
-use crate::material::{MatTex, Material};
+use crate::material::{MatTex, Material, Transparency};
 use crate::parser;
 use crate::shape::{Intersectable, Plane, Sphere, Triangle};
 use crate::algebra::{Vec3, Vec2, Vertex};
 use crate::skybox::Skybox;
 use crate::texture_map;
-use crate::thruster;
+use crate::scene::Scene;
 
-pub fn make_world<'a>() -> Result<thruster::Thruster<'a>, String> {
+pub fn make_world<'a>() -> Result<Scene<'a>, String> {
 	let mut texture_map = texture_map::TextureMap::new();
 
 	let checker_handle = texture_map.load_image_from_file("./textures/checker.png")?;
@@ -47,6 +47,17 @@ pub fn make_world<'a>() -> Result<thruster::Thruster<'a>, String> {
 		c_diffuse: 0.7,
 		c_reflection: 0.3,
 		c_ambient: 0.0,
+        transparency: Transparency::not_transparent(),
+		texture: red,
+	};
+    let trans_mat = Material {
+		c_diffuse: 0.0,
+		c_reflection: 0.0,
+		c_ambient: 0.0,
+        transparency: Transparency {
+            amount: 1.0,
+            index_of_refraction: 1.4,
+        },
 		texture: red,
 	};
 	let black = MatTex::Color(Vec3::new(255.0, 255.0, 255.0));
@@ -54,6 +65,7 @@ pub fn make_world<'a>() -> Result<thruster::Thruster<'a>, String> {
 		c_diffuse: 0.7,
 		c_reflection: 0.3,
 		c_ambient: 0.0,
+        transparency: Transparency::not_transparent(),
 		texture: black,
 	};
 	let green = MatTex::Color(Vec3::new(0.0, 255.0, 0.0));
@@ -61,24 +73,25 @@ pub fn make_world<'a>() -> Result<thruster::Thruster<'a>, String> {
 		c_diffuse: 0.7,
 		c_reflection: 0.0,
 		c_ambient: 0.3,
+        transparency: Transparency::not_transparent(),
 		texture: green,
 	};
 
-	let obj = parser::parse("./objs/sphere.obj".to_string());
+	let obj = parser::parse("./objs/teapot.obj".to_string());
 	let mut scene: Vec<Box<dyn Intersectable + Sync>> = Vec::new();
      //for (avt, bvt, cvt) in obj.triangles.iter() {
          //scene.push(Box::new(Triangle {
              //a: Vertex::from_parsed(avt),
              //b: Vertex::from_parsed(bvt),
              //c: Vertex::from_parsed(cvt),
-             //material: red_mat,
+             //material: trans_mat,
          //}))
      //}
 	scene.extend::<Vec<Box<dyn Intersectable + Sync>>>(vec![
 		Box::new(Plane {
 			origin: Vec3::new(0.0, 0.0, 100.0),
-			normal: Vec3::new(0.0, 1.0, -1.0).normalized(),
-			material: wood_mat,
+			normal: Vec3::new(0.0, 1.0, 0.0).normalized(),
+			material: plane_mat,
 		}),
 		// Box::new(Plane {
 		// 	origin: Vec3::new(0.0, 100.0, 100.0),
@@ -101,9 +114,9 @@ pub fn make_world<'a>() -> Result<thruster::Thruster<'a>, String> {
 			material: red_mat,
 		}),
 		Box::new(Sphere {
-			origin: Vec3::new(-75.0, 300.0, 50.0),
+			origin: Vec3::new(-75.0, 100.0, 250.0),
 			radius: 100.0,
-			material: red_mat,
+			material: trans_mat,
 		}),
 		// Box::new(Sphere {
 		// 	origin: Vec3::new(0.0, 100.0, 25.0),
@@ -118,7 +131,7 @@ pub fn make_world<'a>() -> Result<thruster::Thruster<'a>, String> {
 	]);
 
 	#[allow(unused_mut)]
-	let mut thruster = thruster::Thruster {
+	let mut scene = Scene {
 		camera: PerspectiveCamera::new(Vec3::new(0.0, 50.0, -200.0)),
 		shapes: scene,
 		lights: vec![Box::new(PointLight {
@@ -129,5 +142,5 @@ pub fn make_world<'a>() -> Result<thruster::Thruster<'a>, String> {
 		skybox,
 	};
 
-	Ok(thruster)
+	Ok(scene)
 }

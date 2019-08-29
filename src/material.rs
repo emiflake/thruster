@@ -36,11 +36,31 @@ impl MatTex {
 }
 
 #[derive(Clone, Copy)]
+pub struct Transparency {
+    pub index_of_refraction: f64,
+    pub amount: f64,
+}
+
+impl Transparency {
+    pub fn not_transparent() -> Self {
+        Self {
+            index_of_refraction: 1.0,
+            amount: 0.0,
+        }
+    }
+
+    pub fn is_transparent(&self) -> bool {
+        self.amount > 0.0
+    }
+}
+
+#[derive(Clone, Copy)]
 pub struct Material {
     pub texture: MatTex,
     pub c_diffuse: f64,
     pub c_ambient: f64,
     pub c_reflection: f64,
+    pub transparency: Transparency,
 }
 
 impl Material {
@@ -51,6 +71,7 @@ impl Material {
             c_diffuse: 0.7,
             c_ambient: 0.3,
             c_reflection: 0.0,
+            transparency: Transparency::not_transparent(),
         }
     }
 
@@ -60,6 +81,7 @@ impl Material {
             c_diffuse: 0.3,
             c_ambient: 0.0,
             c_reflection: 0.7,
+            transparency: Transparency::not_transparent(),
         }
     }
 }

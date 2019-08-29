@@ -1,4 +1,4 @@
-use crate::thruster::Thruster;
+use crate::scene::Scene;
 use crate::key_state::Keystate;
 use crate::support;
 use crate::profiler::Profiler;
@@ -16,12 +16,12 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 pub struct App<'a> {
-    pub thruster: Thruster<'a>,
+    pub scene: Scene<'a>,
 }
 
 impl<'a> App<'a> {
-    pub fn new(thruster: Thruster<'a>) -> App<'a> {
-        Self { thruster: thruster }
+    pub fn new(scene: Scene<'a>) -> App<'a> {
+        Self { scene }
     }
 
     pub fn run(&mut self) -> Result<(), String> {
@@ -92,7 +92,7 @@ impl<'a> App<'a> {
 					dimensions[1] = 480;
 				}
 				if imgui::Ui::button(&ui, im_str!("Take Screenshot"), [175.0, 50.0]) {
-					self.thruster
+					self.scene
 						.screenshot(
 							"screenshot.png",
 							f64::from(dimensions[0]),
@@ -111,9 +111,9 @@ impl<'a> App<'a> {
 			closed = true;
 		}
 
-		handle_keys(&keystate, &mut self.thruster);
+		handle_keys(&keystate, &mut self.scene);
 
-		let image = self.thruster.render_to_buffer(640.0, 360.0);
+		let image = self.scene.render_to_buffer(640.0, 360.0);
 		let image_dimensions = image.dimensions();
 		let raw_pixels = image.into_raw();
 
@@ -157,7 +157,7 @@ impl<'a> App<'a> {
     }
 }
 
-pub fn handle_keys(keystate: &Keystate, thruster: &mut Thruster) {
+pub fn handle_keys(keystate: &Keystate, scene: &mut Scene) {
 	let speed = if keystate.is_key_down(glutin::VirtualKeyCode::LShift) {
 		25.0
 	} else {
@@ -165,27 +165,27 @@ pub fn handle_keys(keystate: &Keystate, thruster: &mut Thruster) {
 	};
 
 	if keystate.is_key_down(glutin::VirtualKeyCode::A) {
-		thruster.camera.translate(Vec3::new(-speed, 0.0, 0.0));
+		scene.camera.translate(Vec3::new(-speed, 0.0, 0.0));
 	}
 	if keystate.is_key_down(glutin::VirtualKeyCode::D) {
-		thruster.camera.translate(Vec3::new(speed, 0.0, 0.0));
+		scene.camera.translate(Vec3::new(speed, 0.0, 0.0));
 	}
 	if keystate.is_key_down(glutin::VirtualKeyCode::S) {
-		thruster.camera.translate(Vec3::new(0.0, 0.0, speed));
+		scene.camera.translate(Vec3::new(0.0, 0.0, speed));
 	}
 	if keystate.is_key_down(glutin::VirtualKeyCode::W) {
-		thruster.camera.translate(Vec3::new(0.0, 0.0, -speed));
+		scene.camera.translate(Vec3::new(0.0, 0.0, -speed));
 	}
 	if keystate.is_key_down(glutin::VirtualKeyCode::E) {
-		thruster.camera.translate(Vec3::new(0.0, speed, 0.0));
+		scene.camera.translate(Vec3::new(0.0, speed, 0.0));
 	}
 	if keystate.is_key_down(glutin::VirtualKeyCode::Q) {
-		thruster.camera.translate(Vec3::new(0.0, -speed, 0.0));
+		scene.camera.translate(Vec3::new(0.0, -speed, 0.0));
 	}
 	if keystate.is_key_down(glutin::VirtualKeyCode::Left) {
-		thruster.camera.rotate(Vec3::new(0.0, -0.05, 0.0));
+		scene.camera.rotate(Vec3::new(0.0, -0.05, 0.0));
 	}
 	if keystate.is_key_down(glutin::VirtualKeyCode::Right) {
-		thruster.camera.rotate(Vec3::new(0.0, 0.05, 0.0));
+		scene.camera.rotate(Vec3::new(0.0, 0.05, 0.0));
 	}
 }

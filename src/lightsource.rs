@@ -12,9 +12,10 @@
 
 use crate::shape::{Intersection, Ray};
 use crate::algebra::Vec3;
+use crate::scene::Scene;
 
 pub trait Lightsource {
-    fn luminosity_at(&self, scene: &crate::thruster::Thruster, intersection: &Intersection) -> f64;
+    fn luminosity_at(&self, scene: &Scene, intersection: &Intersection) -> f64;
     fn color(&self) -> Vec3;
 }
 
@@ -24,7 +25,7 @@ pub struct PointLight {
 }
 
 impl Lightsource for PointLight {
-    fn luminosity_at(&self, scene: &crate::thruster::Thruster, intersection: &Intersection) -> f64 {
+    fn luminosity_at(&self, scene: &Scene, intersection: &Intersection) -> f64 {
         let light_ray = (self.origin - intersection.origin).normalized();
         let ray = Ray {
             origin: intersection.origin,

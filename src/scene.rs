@@ -22,7 +22,7 @@ use crate::texture_map::TextureMap;
 
 use scoped_threadpool::Pool;
 
-pub struct Thruster<'a> {
+pub struct Scene<'a> {
 	pub camera: PerspectiveCamera,
 	pub shapes: Vec<Shape<'a>>,
 	pub lights: Vec<Box<dyn Lightsource + Sync + 'a>>,
@@ -30,7 +30,7 @@ pub struct Thruster<'a> {
 	pub skybox: Skybox,
 }
 
-impl Thruster<'_> {
+impl Scene<'_> {
 	pub fn screenshot(&self, filename: &'static str, w: f64, h: f64) -> Result<(), String> {
 		let before = SystemTime::now();
 		let screenshot = self.render_to_buffer(w, h);
@@ -74,12 +74,12 @@ impl Thruster<'_> {
 			}
 		});
 
-        // use crate::dither::{ColorPalette, Dither};
-		// let dither = Dither {
-			// palette: ColorPalette::vga_palette(),
-		// };
+         //use crate::dither::{ColorPalette, Dither};
+         //let dither = Dither {
+             //palette: ColorPalette::vga_palette(),
+         //};
 
-		// dither.dither_image(buf)
-		buf
+         //dither.dither_image(buf)
+        buf
 	}
 }
