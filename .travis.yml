@@ -1,9 +1,34 @@
 # For now, we'll just have Continuous Building on Travis
-# TODO: Actually have testing
 # TODO: Add caching
 
 language: rust
+rust:
+  - 1.37.0
 
-before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -qq libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libegl1-mesa-dev libgles2-mesa-dev
+sudo: required
+addons:
+  apt:
+    packages:
+      - libcurl4-openssl-dev
+      - libelf-dev
+      - libdw-dev
+      - cmake
+      - gcc
+      - binutils-dev
+      - libiberty-dev
+
+after_success: |
+  wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz &&
+  tar xzf master.tar.gz &&
+  cd kcov-master &&
+  mkdir build &&
+  cd build &&
+  cmake .. &&
+  make &&
+  make install DESTDIR=../../kcov-build &&
+  cd ../.. &&
+  rm -rf kcov-master &&
+  #for file in target/debug/thruster-*; do [ -x "${file}" ] || continue; mkdir -p "target/cov/$(basename $file)"; ./kcov-build/usr/local/bin/kcov --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/$(basename $file)" "$file"; done &&
+  ./kcov-build/usr/local/bin/kcov --exclude-pattern=/.cargo,/usr/lib --verify target/cov target/debug/thruster-* &&
+  bash <(curl -s https://codecov.io/bash) &&
+  echo "Uploaded code coverage"
