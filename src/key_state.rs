@@ -1,7 +1,6 @@
 use glutin::ElementState;
 use std::collections::HashSet;
 
-
 #[derive(Default)]
 pub struct Keystate {
 	pub keys: HashSet<glutin::VirtualKeyCode>,

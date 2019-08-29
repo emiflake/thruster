@@ -33,7 +33,7 @@ mod shape;
 mod skybox;
 mod support;
 mod texture_map;
-mod thruster;
+mod scene;
 mod app;
 mod profiler;
 mod algebra;

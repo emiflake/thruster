@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 use crate::algebra::{Vec3, Vec2, Vertex};
+use crate::scene::Scene;
 
 pub type Shape<'a> = Box<dyn Intersectable + 'a + Sync>;
 
@@ -39,7 +40,7 @@ pub trait Intersectable {
 impl Ray {
     pub fn cast<'a>(
         &self,
-        scene: &'a crate::thruster::Thruster,
+        scene: &'a Scene,
     ) -> Vec<(Intersection, &'a Shape<'a>)> {
         let mut intersections: Vec<(Intersection, &Shape<'a>)> = Vec::new();
 
@@ -55,7 +56,7 @@ impl Ray {
     pub fn color_function<'a>(
         &self,
         intersections: Vec<(Intersection, &Shape<'a>)>,
-        scene: &crate::thruster::Thruster,
+        scene: &Scene,
     ) -> Option<Vec3> {
         let mut closest;
         closest = intersections.first()?;

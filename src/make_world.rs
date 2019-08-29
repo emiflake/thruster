@@ -9,9 +9,9 @@ use crate::shape::{Intersectable, Plane, Sphere, Triangle};
 use crate::algebra::{Vec3, Vec2, Vertex};
 use crate::skybox::Skybox;
 use crate::texture_map;
-use crate::thruster;
+use crate::scene::Scene;
 
-pub fn make_world<'a>() -> Result<thruster::Thruster<'a>, String> {
+pub fn make_world<'a>() -> Result<Scene<'a>, String> {
 	let mut texture_map = texture_map::TextureMap::new();
 
 	let checker_handle = texture_map.load_image_from_file("./textures/checker.png")?;
@@ -128,7 +128,7 @@ pub fn make_world<'a>() -> Result<thruster::Thruster<'a>, String> {
 	]);
 
 	#[allow(unused_mut)]
-	let mut thruster = thruster::Thruster {
+	let mut scene = Scene {
 		camera: PerspectiveCamera::new(Vec3::new(0.0, 50.0, -200.0)),
 		shapes: scene,
 		lights: vec![Box::new(PointLight {
@@ -139,5 +139,5 @@ pub fn make_world<'a>() -> Result<thruster::Thruster<'a>, String> {
 		skybox,
 	};
 
-	Ok(thruster)
+	Ok(scene)
 }
