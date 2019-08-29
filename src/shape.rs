@@ -95,7 +95,7 @@ float3 refract(float3 i, float3 n, float eta)
 }
  */
         let refr_color = {
-            if self.level <= 0 || mat.c_transparent <= 0.0 {
+            if self.level <= 0 || !mat.transparency.is_transparent() {
                 Vec3::ORIGIN
             }
             else {
@@ -142,7 +142,7 @@ float3 refract(float3 i, float3 n, float eta)
             orig_color.clamp_as_color() * mat.c_ambient
                 + diff_color.clamp_as_color() * mat.c_diffuse
                 + refl_color.clamp_as_color() * mat.c_reflection
-                + refr_color.clamp_as_color() * mat.c_transparent,
+                + refr_color.clamp_as_color() * mat.transparency.amount,
         )
     }
 }

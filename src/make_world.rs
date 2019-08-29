@@ -3,7 +3,7 @@
 
 use crate::camera::PerspectiveCamera;
 use crate::lightsource::PointLight;
-use crate::material::{MatTex, Material};
+use crate::material::{MatTex, Material, Transparency};
 use crate::parser;
 use crate::shape::{Intersectable, Plane, Sphere, Triangle};
 use crate::algebra::{Vec3, Vec2, Vertex};
@@ -47,14 +47,17 @@ pub fn make_world<'a>() -> Result<Scene<'a>, String> {
 		c_diffuse: 0.7,
 		c_reflection: 0.3,
 		c_ambient: 0.0,
-        c_transparent: 0.0,
+        transparency: Transparency::not_transparent(),
 		texture: red,
 	};
     let trans_mat = Material {
 		c_diffuse: 0.0,
 		c_reflection: 0.0,
 		c_ambient: 0.0,
-        c_transparent: 1.0,
+        transparency: Transparency {
+            amount: 1.0,
+            index_of_refraction: 1.4,
+        },
 		texture: red,
 	};
 	let black = MatTex::Color(Vec3::new(255.0, 255.0, 255.0));
@@ -62,7 +65,7 @@ pub fn make_world<'a>() -> Result<Scene<'a>, String> {
 		c_diffuse: 0.7,
 		c_reflection: 0.3,
 		c_ambient: 0.0,
-        c_transparent: 0.0,
+        transparency: Transparency::not_transparent(),
 		texture: black,
 	};
 	let green = MatTex::Color(Vec3::new(0.0, 255.0, 0.0));
@@ -70,7 +73,7 @@ pub fn make_world<'a>() -> Result<Scene<'a>, String> {
 		c_diffuse: 0.7,
 		c_reflection: 0.0,
 		c_ambient: 0.3,
-        c_transparent: 0.0,
+        transparency: Transparency::not_transparent(),
 		texture: green,
 	};
 
