@@ -115,7 +115,7 @@ impl Ray {
             } else {
                 let reflection_dir = self.direction - (n_dot_d * 2.0) * inter.normal;
                 let ray = Ray {
-                    origin: inter.origin - inter.normal * 0.01,
+                    origin: inter.origin + inter.normal * 0.01,
                     direction: reflection_dir,
                     level: self.level - 1,
                 };

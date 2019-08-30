@@ -38,17 +38,31 @@ pub fn make_world<'a>() -> Result<Scene<'a>, String> {
 	let checker_mattex = MatTex::from_handle(checker_handle, Vec2::new(1000.0, 1000.0));
 	let wood_mattex = MatTex::from_handle(wood_handle, Vec2::new(1000.0, 1000.0));
 	let earth_mattex = MatTex::from_handle(earth_handle, Vec2::new(1.0, 1.0));
-	let plane_mat = Material::reflective(checker_mattex);
+	let plane_mat = Material {
+        c_diffuse: 0.3,
+        c_reflection: 0.7,
+        c_ambient: 0.0,
+        transparency: Transparency::not_transparent(),
+        texture: checker_mattex
+    };
 	let wood_mat = Material::diffuse(wood_mattex);
 	let earth_mat = Material::reflective(earth_mattex);
 
 	let red = MatTex::Color(Vec3::new(255.0, 0.0, 0.0));
 	let red_mat = Material {
-		c_diffuse: 0.7,
-		c_reflection: 0.3,
+		c_diffuse: 1.0,
+		c_reflection: 0.0,
 		c_ambient: 0.0,
         transparency: Transparency::not_transparent(),
 		texture: red,
+	};
+	let grey = MatTex::Color(Vec3::new(100.0, 100.0, 100.0));
+	let grey_mat = Material {
+		c_diffuse: 1.0,
+		c_reflection: 0.0,
+		c_ambient: 0.0,
+        transparency: Transparency::not_transparent(),
+		texture: grey,
 	};
     let trans_mat = Material {
 		c_diffuse: 0.0,
@@ -60,6 +74,13 @@ pub fn make_world<'a>() -> Result<Scene<'a>, String> {
         },
 		texture: red,
 	};
+    let refl_mat = Material {
+        c_diffuse: 0.3,
+        c_reflection: 0.7,
+        c_ambient: 0.0,
+        transparency: Transparency::not_transparent(),
+        texture: MatTex::Color(Vec3::new(255.0, 255.0, 255.0)),
+    };
 	let black = MatTex::Color(Vec3::new(255.0, 255.0, 255.0));
 	let black_mat = Material {
 		c_diffuse: 0.7,
@@ -70,9 +91,9 @@ pub fn make_world<'a>() -> Result<Scene<'a>, String> {
 	};
 	let green = MatTex::Color(Vec3::new(0.0, 255.0, 0.0));
 	let green_mat = Material {
-		c_diffuse: 0.7,
+		c_diffuse: 1.0,
 		c_reflection: 0.0,
-		c_ambient: 0.3,
+		c_ambient: 0.0,
         transparency: Transparency::not_transparent(),
 		texture: green,
 	};
@@ -84,60 +105,61 @@ pub fn make_world<'a>() -> Result<Scene<'a>, String> {
              //a: Vertex::from_parsed(avt),
              //b: Vertex::from_parsed(bvt),
              //c: Vertex::from_parsed(cvt),
-             //material: trans_mat,
+             //material: refl_mat,
          //}))
      //}
 	scene.extend::<Vec<Box<dyn Intersectable + Sync>>>(vec![
 		Box::new(Plane {
-			origin: Vec3::new(0.0, 0.0, 100.0),
+			origin: Vec3::new(0.0, 0.0, 0.0),
 			normal: Vec3::new(0.0, 1.0, 0.0).normalized(),
 			material: plane_mat,
 		}),
-		// Box::new(Plane {
-		// 	origin: Vec3::new(0.0, 100.0, 100.0),
-		// 	normal: Vec3::new(0.0, -1.0, -1.0).normalized(),
-		// 	material: plane_mat,
-		// }),
-		// Box::new(Plane {
-		// 	origin: Vec3::new(0.0, 0.0, -100.0),
-		// 	normal: Vec3::new(0.0, 1.0, 1.0).normalized(),
-		// 	material: plane_mat,
-		// }),
-		// Box::new(Plane {
-		// 	origin: Vec3::new(0.0, 100.0, -100.0),
-		// 	normal: Vec3::new(0.0, -1.0, 1.0).normalized(),
-		// 	material: plane_mat,
-		// }),
-		Box::new(Sphere {
-			origin: Vec3::new(-75.0, 100.0, 50.0),
-			radius: 50.0,
-			material: red_mat,
-		}),
-		Box::new(Sphere {
-			origin: Vec3::new(-75.0, 100.0, 250.0),
-			radius: 100.0,
-			material: trans_mat,
-		}),
-		// Box::new(Sphere {
-		// 	origin: Vec3::new(0.0, 100.0, 25.0),
-		// 	radius: 25.0,
-		// 	material: green_mat,
-		// }),
-		Box::new(Sphere {
-			origin: Vec3::new(75.0, 80.0, 50.0),
-			radius: 50.0,
-			material: earth_mat,
-		}),
+         Box::new(Plane {
+             origin: Vec3::new(-200.0, 0.0, 100.0),
+             normal: Vec3::new(1.0, 0.0, 0.0).normalized(),
+             material: red_mat,
+         }),
+         Box::new(Plane {
+             origin: Vec3::new(0.0, 0.0, 100.0),
+             normal: Vec3::new(0.0, 0.0, -1.0).normalized(),
+             material: grey_mat,
+         }),
+         Box::new(Plane {
+             origin: Vec3::new(0.0, 400.0, 100.0),
+             normal: Vec3::new(0.0, -1.0, 0.0).normalized(),
+             material: grey_mat,
+         }),
+         Box::new(Plane {
+             origin: Vec3::new(200.0, 0.0, 100.0),
+             normal: Vec3::new(-1.0, 0.0, 0.0).normalized(),
+             material: green_mat,
+         }),
+         Box::new(Sphere {
+            origin: Vec3::new(50.0, 100.0, 0.0),
+            radius: 25.0,
+            material: earth_mat,
+         }),
+         Box::new(Sphere {
+            origin: Vec3::new(0.0, 50.0, 0.0),
+            radius: 50.0,
+            material: red_mat,
+         }),
 	]);
 
 	#[allow(unused_mut)]
 	let mut scene = Scene {
 		camera: PerspectiveCamera::new(Vec3::new(0.0, 50.0, -200.0)),
 		shapes: scene,
-		lights: vec![Box::new(PointLight {
-			origin: Vec3::new(1.0, 2500.0, -30.0),
-			color: Vec3::new(255.0, 255.0, 255.0),
-		})],
+		lights: vec![
+            Box::new(PointLight {
+                origin: Vec3::new(100.0, 20.0, -50.0),
+                color: Vec3::new(255.0, 255.0, 255.0),
+            }),
+            Box::new(PointLight {
+                origin: Vec3::new(0.0, 350.0, 50.0),
+                color: Vec3::new(255.0, 255.0, 255.0),
+            }),
+        ],
 		texture_map,
 		skybox,
 	};

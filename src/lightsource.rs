@@ -28,13 +28,13 @@ impl Lightsource for PointLight {
     fn luminosity_at(&self, scene: &Scene, intersection: &Intersection) -> f64 {
         let light_ray = (self.origin - intersection.origin).normalized();
         let ray = Ray {
-            origin: intersection.origin,
+            origin: intersection.origin + intersection.normal * 0.001,
             direction: light_ray,
             level: 0,
         };
         let intersections = ray.cast(&scene);
         for inter in intersections.iter() {
-            if intersection.origin.distance(&self.origin) > inter.0.origin.distance(&self.origin) {
+            if intersection.origin.distance(&self.origin) > inter.0.t {
                 return 0.0;
             }
         }
