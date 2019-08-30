@@ -108,12 +108,12 @@ impl Ray {
             }
         };
         let refl_color = {
-            if self.level == 0 || mat.c_reflection <= 0.0 {
+            if self.level == 0 || !mat.reflectivity.is_reflective() {
                 Vec3::ORIGIN
             } else {
                 let mut col = Vec3::ORIGIN;
-                let spp = 5;
-                let blurriness = 1.0;
+                let blurriness = mat.reflectivity.blurriness;
+                let spp = if blurriness == 0.0 { 1 } else { 10 };
 
                 for _ in 0..spp {
                     let reflection_dir = self.direction - (n_dot_d * 2.0) * inter.normal;
@@ -144,7 +144,7 @@ impl Ray {
         Some(
             orig_color.clamp_as_color() * mat.c_ambient
                 + diff_color.clamp_as_color() * mat.c_diffuse
-                + refl_color.clamp_as_color() * mat.c_reflection
+                + refl_color.clamp_as_color() * mat.reflectivity.amount
                 + refr_color.clamp_as_color() * mat.transparency.amount,
         )
     }

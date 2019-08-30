@@ -34,7 +34,7 @@ impl Lightsource for PointLight {
             let mut rng = rand::thread_rng();
             let mut amt = 0.0;
             let spp = 3;
-            let blurriness = 0.01;
+            let blurriness = 0.07;
 
             'sample_loop: for _ in 0..spp {
                 let light_ray = (self.origin - intersection.origin)

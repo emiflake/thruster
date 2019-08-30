@@ -43,7 +43,7 @@ pub fn main() -> std::result::Result<(), String> {
 
     //let mut app = app::App::new(thruster);
     //
-    thruster.screenshot("screenshot.png", 4096.0, 2160.0);
+    thruster.screenshot("screenshot.png", 2.0 * 4096.0, 2.0 * 2160.0);
 
     //app.run()?;
     Ok(())
