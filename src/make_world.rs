@@ -1,79 +1,79 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 
+use crate::algebra::{Vec2, Vec3, Vertex};
 use crate::camera::PerspectiveCamera;
 use crate::lightsource::PointLight;
 use crate::material::{MatTex, Material, Transparency};
 use crate::parser;
+use crate::scene::Scene;
 use crate::shape::{Intersectable, Plane, Sphere, Triangle};
-use crate::algebra::{Vec3, Vec2, Vertex};
 use crate::skybox::Skybox;
 use crate::texture_map;
-use crate::scene::Scene;
 
 pub fn make_world<'a>() -> Result<Scene<'a>, String> {
-	let mut texture_map = texture_map::TextureMap::new();
+    let mut texture_map = texture_map::TextureMap::new();
 
-	let checker_handle = texture_map.load_image_from_file("./textures/checker.png")?;
-	let wood_handle = texture_map.load_image_from_file("./textures/wood.png")?;
-	let earth_handle = texture_map.load_image_from_file("./textures/earth.png")?;
+    let checker_handle = texture_map.load_image_from_file("./textures/checker.png")?;
+    let wood_handle = texture_map.load_image_from_file("./textures/wood.png")?;
+    let earth_handle = texture_map.load_image_from_file("./textures/earth.png")?;
 
-     let skybox = Skybox::new([
-         texture_map.load_image_from_file("./skybox/miramar/miramar_bk.png")?,
-         texture_map.load_image_from_file("./skybox/miramar/miramar_ft.png")?,
-         texture_map.load_image_from_file("./skybox/miramar/miramar_up.png")?,
-         texture_map.load_image_from_file("./skybox/miramar/miramar_dn.png")?,
-         texture_map.load_image_from_file("./skybox/miramar/miramar_rt.png")?,
-         texture_map.load_image_from_file("./skybox/miramar/miramar_lf.png")?,
-     ]);
-	//let skybox = Skybox::new([
-		//texture_map.load_image_from_file("./skybox/Yokohama3/negx.png")?,
-		//texture_map.load_image_from_file("./skybox/Yokohama3/posx.png")?,
-		//texture_map.load_image_from_file("./skybox/Yokohama3/posy.png")?,
-		//texture_map.load_image_from_file("./skybox/Yokohama3/negy.png")?,
-		//texture_map.load_image_from_file("./skybox/Yokohama3/posz.png")?,
-		//texture_map.load_image_from_file("./skybox/Yokohama3/negz.png")?,
-	//]);
+    let skybox = Skybox::new([
+        texture_map.load_image_from_file("./skybox/miramar/miramar_bk.png")?,
+        texture_map.load_image_from_file("./skybox/miramar/miramar_ft.png")?,
+        texture_map.load_image_from_file("./skybox/miramar/miramar_up.png")?,
+        texture_map.load_image_from_file("./skybox/miramar/miramar_dn.png")?,
+        texture_map.load_image_from_file("./skybox/miramar/miramar_rt.png")?,
+        texture_map.load_image_from_file("./skybox/miramar/miramar_lf.png")?,
+    ]);
+    //let skybox = Skybox::new([
+    //texture_map.load_image_from_file("./skybox/Yokohama3/negx.png")?,
+    //texture_map.load_image_from_file("./skybox/Yokohama3/posx.png")?,
+    //texture_map.load_image_from_file("./skybox/Yokohama3/posy.png")?,
+    //texture_map.load_image_from_file("./skybox/Yokohama3/negy.png")?,
+    //texture_map.load_image_from_file("./skybox/Yokohama3/posz.png")?,
+    //texture_map.load_image_from_file("./skybox/Yokohama3/negz.png")?,
+    //]);
 
-	let checker_mattex = MatTex::from_handle(checker_handle, Vec2::new(1000.0, 1000.0));
-	let wood_mattex = MatTex::from_handle(wood_handle, Vec2::new(1000.0, 1000.0));
-	let earth_mattex = MatTex::from_handle(earth_handle, Vec2::new(1.0, 1.0));
-	let plane_mat = Material {
+    let checker_mattex = MatTex::from_handle(checker_handle, Vec2::new(1000.0, 1000.0));
+    let wood_mattex = MatTex::from_handle(wood_handle, Vec2::new(1000.0, 1000.0));
+    let earth_mattex = MatTex::from_handle(earth_handle, Vec2::new(1.0, 1.0));
+    let plane_mat = Material {
         c_diffuse: 0.3,
         c_reflection: 0.7,
         c_ambient: 0.0,
         transparency: Transparency::not_transparent(),
-        texture: checker_mattex
+        texture: checker_mattex,
     };
-	let wood_mat = Material::diffuse(wood_mattex);
-	let earth_mat = Material::reflective(earth_mattex);
+    let wood_mat = Material::diffuse(wood_mattex);
+    let earth_mat = Material::reflective(earth_mattex);
 
-	let red = MatTex::Color(Vec3::new(255.0, 0.0, 0.0));
-	let red_mat = Material {
-		c_diffuse: 1.0,
-		c_reflection: 0.0,
-		c_ambient: 0.0,
+    let red = MatTex::Color(Vec3::new(175.0, 0.0, 0.0));
+    let red_mat = Material {
+        c_diffuse: 1.0,
+        c_reflection: 0.0,
+        c_ambient: 0.0,
         transparency: Transparency::not_transparent(),
-		texture: red,
-	};
-	let grey = MatTex::Color(Vec3::new(100.0, 100.0, 100.0));
-	let grey_mat = Material {
-		c_diffuse: 1.0,
-		c_reflection: 0.0,
-		c_ambient: 0.0,
+        texture: red,
+    };
+    let grey = MatTex::Color(Vec3::new(100.0, 100.0, 100.0));
+    let grey_mat = Material {
+        c_diffuse: 1.0,
+        c_reflection: 0.0,
+        c_ambient: 0.0,
         transparency: Transparency::not_transparent(),
-		texture: grey,
-	};
+        texture: grey,
+    };
     let trans_mat = Material {
-		c_diffuse: 0.0,
-		c_reflection: 0.0,
-		c_ambient: 0.0,
+        c_diffuse: 0.0,
+        c_reflection: 0.0,
+        c_ambient: 0.0,
         transparency: Transparency {
             amount: 1.0,
             index_of_refraction: 1.4,
         },
-		texture: red,
-	};
+        texture: red,
+    };
     let refl_mat = Material {
         c_diffuse: 0.3,
         c_reflection: 0.7,
@@ -81,88 +81,88 @@ pub fn make_world<'a>() -> Result<Scene<'a>, String> {
         transparency: Transparency::not_transparent(),
         texture: MatTex::Color(Vec3::new(255.0, 255.0, 255.0)),
     };
-	let black = MatTex::Color(Vec3::new(255.0, 255.0, 255.0));
-	let black_mat = Material {
-		c_diffuse: 0.7,
-		c_reflection: 0.3,
-		c_ambient: 0.0,
+    let black = MatTex::Color(Vec3::new(255.0, 255.0, 255.0));
+    let black_mat = Material {
+        c_diffuse: 0.7,
+        c_reflection: 0.3,
+        c_ambient: 0.0,
         transparency: Transparency::not_transparent(),
-		texture: black,
-	};
-	let green = MatTex::Color(Vec3::new(0.0, 255.0, 0.0));
-	let green_mat = Material {
-		c_diffuse: 1.0,
-		c_reflection: 0.0,
-		c_ambient: 0.0,
+        texture: black,
+    };
+    let green = MatTex::Color(Vec3::new(0.0, 170.0, 0.0));
+    let green_mat = Material {
+        c_diffuse: 1.0,
+        c_reflection: 0.0,
+        c_ambient: 0.0,
         transparency: Transparency::not_transparent(),
-		texture: green,
-	};
+        texture: green,
+    };
 
-	let obj = parser::parse("./objs/teapot.obj".to_string());
-	let mut scene: Vec<Box<dyn Intersectable + Sync>> = Vec::new();
-     //for (avt, bvt, cvt) in obj.triangles.iter() {
-         //scene.push(Box::new(Triangle {
-             //a: Vertex::from_parsed(avt),
-             //b: Vertex::from_parsed(bvt),
-             //c: Vertex::from_parsed(cvt),
-             //material: refl_mat,
-         //}))
-     //}
-	scene.extend::<Vec<Box<dyn Intersectable + Sync>>>(vec![
-		Box::new(Plane {
-			origin: Vec3::new(0.0, 0.0, 0.0),
-			normal: Vec3::new(0.0, 1.0, 0.0).normalized(),
-			material: plane_mat,
-		}),
-         Box::new(Plane {
-             origin: Vec3::new(-200.0, 0.0, 100.0),
-             normal: Vec3::new(1.0, 0.0, 0.0).normalized(),
-             material: red_mat,
-         }),
-         Box::new(Plane {
-             origin: Vec3::new(0.0, 0.0, 100.0),
-             normal: Vec3::new(0.0, 0.0, -1.0).normalized(),
-             material: grey_mat,
-         }),
-         Box::new(Plane {
-             origin: Vec3::new(0.0, 400.0, 100.0),
-             normal: Vec3::new(0.0, -1.0, 0.0).normalized(),
-             material: grey_mat,
-         }),
-         Box::new(Plane {
-             origin: Vec3::new(200.0, 0.0, 100.0),
-             normal: Vec3::new(-1.0, 0.0, 0.0).normalized(),
-             material: green_mat,
-         }),
-         Box::new(Sphere {
+    let obj = parser::parse("./objs/teapot.obj".to_string());
+    let mut scene: Vec<Box<dyn Intersectable + Sync>> = Vec::new();
+    //for (avt, bvt, cvt) in obj.triangles.iter() {
+    //scene.push(Box::new(Triangle {
+    //a: Vertex::from_parsed(avt),
+    //b: Vertex::from_parsed(bvt),
+    //c: Vertex::from_parsed(cvt),
+    //material: refl_mat,
+    //}))
+    //}
+    scene.extend::<Vec<Box<dyn Intersectable + Sync>>>(vec![
+        Box::new(Plane {
+            origin: Vec3::new(0.0, 0.0, 0.0),
+            normal: Vec3::new(0.0, 1.0, 0.0).normalized(),
+            material: plane_mat,
+        }),
+        Box::new(Plane {
+            origin: Vec3::new(-200.0, 0.0, 100.0),
+            normal: Vec3::new(1.0, 0.0, 0.0).normalized(),
+            material: red_mat,
+        }),
+        Box::new(Plane {
+            origin: Vec3::new(0.0, 0.0, 100.0),
+            normal: Vec3::new(0.0, 0.0, -1.0).normalized(),
+            material: grey_mat,
+        }),
+        Box::new(Plane {
+            origin: Vec3::new(0.0, 400.0, 100.0),
+            normal: Vec3::new(0.0, -1.0, 0.0).normalized(),
+            material: grey_mat,
+        }),
+        Box::new(Plane {
+            origin: Vec3::new(200.0, 0.0, 100.0),
+            normal: Vec3::new(-1.0, 0.0, 0.0).normalized(),
+            material: green_mat,
+        }),
+        Box::new(Sphere {
             origin: Vec3::new(50.0, 100.0, 0.0),
             radius: 25.0,
             material: earth_mat,
-         }),
-         Box::new(Sphere {
+        }),
+        Box::new(Sphere {
             origin: Vec3::new(0.0, 50.0, 0.0),
             radius: 50.0,
             material: red_mat,
-         }),
-	]);
+        }),
+    ]);
 
-	#[allow(unused_mut)]
-	let mut scene = Scene {
-		camera: PerspectiveCamera::new(Vec3::new(0.0, 50.0, -200.0)),
-		shapes: scene,
-		lights: vec![
+    #[allow(unused_mut)]
+    let mut scene = Scene {
+        camera: PerspectiveCamera::new(Vec3::new(0.0, 50.0, -200.0)),
+        shapes: scene,
+        lights: vec![
             Box::new(PointLight {
                 origin: Vec3::new(100.0, 20.0, -50.0),
-                color: Vec3::new(255.0, 255.0, 255.0),
+                color: Vec3::new(255.0, 255.0, 255.0) * 0.25,
             }),
             Box::new(PointLight {
-                origin: Vec3::new(0.0, 350.0, 50.0),
-                color: Vec3::new(255.0, 255.0, 255.0),
+                origin: Vec3::new(-50.0, 350.0, 50.0),
+                color: Vec3::new(255.0, 255.0, 255.0) * 0.25,
             }),
         ],
-		texture_map,
-		skybox,
-	};
+        texture_map,
+        skybox,
+    };
 
-	Ok(scene)
+    Ok(scene)
 }

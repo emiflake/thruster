@@ -11,8 +11,8 @@
 /* ************************************************************************** */
 
 use crate::algebra::{Vec2, Vec3};
-use crate::texture_map::TextureHandle;
 use crate::scene::Scene;
+use crate::texture_map::TextureHandle;
 
 pub struct Skybox {
     /* +x, -x, +y, -y, +z, -z */

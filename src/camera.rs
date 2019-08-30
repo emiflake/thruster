@@ -59,7 +59,7 @@ impl Camera for PerspectiveCamera {
         Ray {
             origin: self.position,
             direction,
-            level: 10,
+            level: 3,
         }
     }
 }

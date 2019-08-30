@@ -22,6 +22,8 @@ extern crate glium;
 extern crate imgui;
 extern crate imgui_glium_renderer;
 
+mod algebra;
+mod app;
 mod camera;
 mod dither;
 mod key_state;
@@ -29,20 +31,20 @@ mod lightsource;
 mod make_world;
 mod material;
 mod parser;
+mod profiler;
+mod scene;
 mod shape;
 mod skybox;
 mod support;
 mod texture_map;
-mod scene;
-mod app;
-mod profiler;
-mod algebra;
 
 pub fn main() -> std::result::Result<(), String> {
-	let thruster = make_world::make_world()?;
+    let thruster = make_world::make_world()?;
 
-    let mut app = app::App::new(thruster);
+    //let mut app = app::App::new(thruster);
+    //
+    thruster.screenshot("screenshot.png", 4096.0, 2160.0);
 
-    app.run()?;
-	Ok(())
+    //app.run()?;
+    Ok(())
 }

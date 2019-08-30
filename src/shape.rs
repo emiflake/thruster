@@ -10,9 +10,11 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-use crate::algebra::{Vec3, Vec2, Vertex};
-use crate::scene::Scene;
+use crate::algebra::{Vec2, Vec3, Vertex};
 use crate::material::MatTex;
+use crate::scene::Scene;
+
+use rand::prelude::*;
 
 pub type Shape<'a> = Box<dyn Intersectable + 'a + Sync>;
 
@@ -39,10 +41,7 @@ pub trait Intersectable {
 }
 
 impl Ray {
-    pub fn cast<'a>(
-        &self,
-        scene: &'a Scene,
-    ) -> Vec<(Intersection, &'a Shape<'a>)> {
+    pub fn cast<'a>(&self, scene: &'a Scene) -> Vec<(Intersection, &'a Shape<'a>)> {
         let mut intersections: Vec<(Intersection, &Shape<'a>)> = Vec::new();
 
         for shape in scene.shapes.iter() {
@@ -59,6 +58,7 @@ impl Ray {
         intersections: Vec<(Intersection, &Shape<'a>)>,
         scene: &Scene,
     ) -> Option<Vec3> {
+        let mut rng = rand::thread_rng();
         let mut closest;
         closest = intersections.first()?;
         for intersection in intersections.iter() {
@@ -89,8 +89,7 @@ impl Ray {
         let refr_color = {
             if self.level <= 0 || !mat.transparency.is_transparent() {
                 Vec3::ORIGIN
-            }
-            else {
+            } else {
                 let ior = mat.transparency.index_of_refraction;
                 let eta = 2.0 - ior;
                 let o = self.direction * eta - inter.normal * (-n_dot_d + eta * n_dot_d);
@@ -106,26 +105,40 @@ impl Ray {
                         .calc_color(scene, ray.direction)
                         .unwrap_or(Vec3::ORIGIN),
                 }
-
             }
         };
         let refl_color = {
             if self.level == 0 || mat.c_reflection <= 0.0 {
                 Vec3::ORIGIN
             } else {
-                let reflection_dir = self.direction - (n_dot_d * 2.0) * inter.normal;
-                let ray = Ray {
-                    origin: inter.origin + inter.normal * 0.01,
-                    direction: reflection_dir,
-                    level: self.level - 1,
-                };
-                match ray.color_function(ray.cast(scene), scene) {
-                    Some(color) => color,
-                    _ => scene
-                        .skybox
-                        .calc_color(scene, ray.direction)
-                        .unwrap_or(Vec3::ORIGIN),
+                let mut col = Vec3::ORIGIN;
+                let spp = 5;
+                let blurriness = 1.0;
+
+                for _ in 0..spp {
+                    let reflection_dir = self.direction - (n_dot_d * 2.0) * inter.normal;
+                    let ray = Ray {
+                        origin: inter.origin + inter.normal * 0.01,
+                        direction: reflection_dir.rotate(Vec3::new(
+                            (rng.gen::<f64>() - 0.5) * blurriness,
+                            (rng.gen::<f64>() - 0.5) * blurriness,
+                            (rng.gen::<f64>() - 0.5) * blurriness,
+                        )),
+                        level: self.level - 1,
+                    };
+                    col = col
+                        + match ray.color_function(ray.cast(scene), scene) {
+                            Some(color) => color / f64::from(spp),
+                            _ => {
+                                (scene
+                                    .skybox
+                                    .calc_color(scene, ray.direction)
+                                    .unwrap_or(Vec3::ORIGIN))
+                                    / f64::from(spp)
+                            }
+                        };
                 }
+                col
             }
         };
         Some(
@@ -167,12 +180,12 @@ impl Intersectable for Sphere {
             return None;
         }
         let t = if t0 < 0.0 {
-                t1
-            } else if t1 < 0.0 {
-                t0
-            } else {
-                t0.min(t1)
-            };
+            t1
+        } else if t1 < 0.0 {
+            t0
+        } else {
+            t0.min(t1)
+        };
         if t <= 0.0 {
             return None;
         }

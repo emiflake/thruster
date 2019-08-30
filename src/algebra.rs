@@ -186,14 +186,12 @@ pub struct Vertex {
     pub uv: Vec2,
 }
 
-
-    use crate::parser;
+use crate::parser;
 impl Vertex {
     #[allow(dead_code)]
     pub fn new(origin: Vec3, normal: Vec3, uv: Vec2) -> Self {
         Self { origin, normal, uv }
     }
-
 
     #[allow(dead_code)]
     pub fn from_parsed(vertex: &parser::Vertex3) -> Self {
