@@ -79,7 +79,10 @@ impl Scene<'_> {
         //palette: ColorPalette::vga_palette(),
         //};
 
+        let denoiser = crate::denoise::Denoiser;
+
         //dither.dither_image(buf)
-        buf
+        denoiser.denoise(buf)
+        //buf
     }
 }

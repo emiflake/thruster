@@ -22,6 +22,8 @@ extern crate glium;
 extern crate imgui;
 extern crate imgui_glium_renderer;
 
+extern crate oidn;
+
 mod algebra;
 mod app;
 mod camera;
@@ -36,6 +38,7 @@ mod scene;
 mod shape;
 mod skybox;
 mod support;
+mod denoise;
 mod texture_map;
 
 pub fn main() -> std::result::Result<(), String> {
@@ -43,7 +46,7 @@ pub fn main() -> std::result::Result<(), String> {
 
     //let mut app = app::App::new(thruster);
     //
-    thruster.screenshot("screenshot.png", 2.0 * 4096.0, 2.0 * 2160.0);
+    thruster.screenshot("screenshot.png", 4096.0, 2160.0);
 
     //app.run()?;
     Ok(())
