@@ -80,8 +80,46 @@ impl<'a> App<'a> {
             let mut ui = imgui.frame();
             profiler.draw_ui(delta_time, &mut ui);
 
-            imgui::Window::new(&ui, im_str!("Render Controls"))
+            imgui::Window::new(&ui, im_str!("Config"))
+                .size([400.0, 175.0], Condition::FirstUseEver)
+                .build(|| {
+                    ui.checkbox(
+                        im_str!("Distributed tracing"),
+                        &mut self.scene.config.distributed_tracing,
+                    );
+                    ui.slider_int(
+                        im_str!("Shadow SPP"),
+                        &mut self.scene.config.shadow_spp,
+                        1,
+                        15,
+                    )
+                    .build();
+                    ui.slider_int(
+                        im_str!("Reflection SPP"),
+                        &mut self.scene.config.reflection_spp,
+                        1,
+                        15,
+                    )
+                    .build();
+                    ui.slider_int(
+                        im_str!("Refraction SPP"),
+                        &mut self.scene.config.refraction_spp,
+                        1,
+                        15,
+                    )
+                    .build();
+                    ui.slider_int(
+                        im_str!("Recursion depth"),
+                        &mut self.scene.config.recursion_depth,
+                        1,
+                        15,
+                    )
+                    .build();
+                });
+
+            imgui::Window::new(&ui, im_str!("Screenshot"))
                 .size([300.0, 150.0], Condition::FirstUseEver)
+                .position([50.0, 500.0], Condition::FirstUseEver)
                 .build(|| {
                     ui.input_int(im_str!("Width"), &mut dimensions[0]).build();
                     ui.input_int(im_str!("Height"), &mut dimensions[1]).build();
@@ -92,6 +130,8 @@ impl<'a> App<'a> {
                         dimensions[1] = 480;
                     }
                     if imgui::Ui::button(&ui, im_str!("Take Screenshot"), [175.0, 50.0]) {
+                        let before = self.scene.config.denoise;
+                        self.scene.config.denoise = true;
                         self.scene
                             .screenshot(
                                 "screenshot.png",
@@ -99,6 +139,7 @@ impl<'a> App<'a> {
                                 f64::from(dimensions[1]),
                             )
                             .expect("Could not take screenshot");
+                        self.scene.config.denoise = before;
 
                         std::process::Command::new("open")
                             .arg("screenshot.png")

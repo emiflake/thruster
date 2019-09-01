@@ -22,7 +22,7 @@ pub type Shape<'a> = Box<dyn Intersectable + 'a + Sync>;
 pub struct Ray {
     pub origin: Vec3,
     pub direction: Vec3,
-    pub level: u8,
+    pub level: i32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -111,34 +111,54 @@ impl Ray {
             if self.level == 0 || !mat.reflectivity.is_reflective() {
                 Vec3::ORIGIN
             } else {
-                let mut col = Vec3::ORIGIN;
-                let blurriness = mat.reflectivity.blurriness;
-                let spp = if blurriness == 0.0 { 1 } else { 10 };
+                if scene.config.distributed_tracing {
+                    let mut col = Vec3::ORIGIN;
+                    let blurriness = mat.reflectivity.blurriness;
+                    let spp = if blurriness == 0.0 {
+                        1
+                    } else {
+                        scene.config.reflection_spp
+                    };
 
-                for _ in 0..spp {
+                    for _ in 0..spp {
+                        let reflection_dir = self.direction - (n_dot_d * 2.0) * inter.normal;
+                        let ray = Ray {
+                            origin: inter.origin + inter.normal * 0.01,
+                            direction: reflection_dir.rotate(Vec3::new(
+                                (rng.gen::<f64>() - 0.5) * blurriness,
+                                (rng.gen::<f64>() - 0.5) * blurriness,
+                                (rng.gen::<f64>() - 0.5) * blurriness,
+                            )),
+                            level: self.level - 1,
+                        };
+                        col = col
+                            + match ray.color_function(ray.cast(scene), scene) {
+                                Some(color) => color / f64::from(spp),
+                                _ => {
+                                    (scene
+                                        .skybox
+                                        .calc_color(scene, ray.direction)
+                                        .unwrap_or(Vec3::ORIGIN))
+                                        / f64::from(spp)
+                                }
+                            };
+                    }
+                    col
+                } else {
                     let reflection_dir = self.direction - (n_dot_d * 2.0) * inter.normal;
                     let ray = Ray {
                         origin: inter.origin + inter.normal * 0.01,
-                        direction: reflection_dir.rotate(Vec3::new(
-                            (rng.gen::<f64>() - 0.5) * blurriness,
-                            (rng.gen::<f64>() - 0.5) * blurriness,
-                            (rng.gen::<f64>() - 0.5) * blurriness,
-                        )),
+                        direction: reflection_dir,
                         level: self.level - 1,
                     };
-                    col = col
-                        + match ray.color_function(ray.cast(scene), scene) {
-                            Some(color) => color / f64::from(spp),
-                            _ => {
-                                (scene
-                                    .skybox
-                                    .calc_color(scene, ray.direction)
-                                    .unwrap_or(Vec3::ORIGIN))
-                                    / f64::from(spp)
-                            }
-                        };
+                    match ray.color_function(ray.cast(scene), scene) {
+                        Some(color) => color,
+                        _ => scene
+                            .skybox
+                            .calc_color(scene, ray.direction)
+                            .unwrap_or(Vec3::ORIGIN),
+                    }
                 }
-                col
             }
         };
         Some(

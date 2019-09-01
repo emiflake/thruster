@@ -26,15 +26,13 @@ pub struct PointLight {
     pub color: Vec3,
 }
 
-const SOFT_SHADOWS: bool = true;
-
 impl Lightsource for PointLight {
     fn luminosity_at(&self, scene: &Scene, intersection: &Intersection) -> f64 {
-        if (SOFT_SHADOWS) {
+        if scene.config.distributed_tracing {
             let mut rng = rand::thread_rng();
             let mut amt = 0.0;
-            let spp = 3;
-            let blurriness = 0.07;
+            let spp = scene.config.shadow_spp;
+            let blurriness = 0.15;
 
             'sample_loop: for _ in 0..spp {
                 let light_ray = (self.origin - intersection.origin)

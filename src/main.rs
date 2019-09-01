@@ -27,6 +27,7 @@ extern crate oidn;
 mod algebra;
 mod app;
 mod camera;
+mod denoise;
 mod dither;
 mod key_state;
 mod lightsource;
@@ -34,20 +35,32 @@ mod make_world;
 mod material;
 mod parser;
 mod profiler;
+mod render_config;
 mod scene;
 mod shape;
 mod skybox;
 mod support;
-mod denoise;
 mod texture_map;
 
 pub fn main() -> std::result::Result<(), String> {
-    let thruster = make_world::make_world()?;
+    let scene = make_world::make_world()?;
 
-    //let mut app = app::App::new(thruster);
-    //
-    thruster.screenshot("screenshot.png", 4096.0, 2160.0);
+    let config = render_config::RenderConfig {
+        reflection_spp: 1,
+        refraction_spp: 1,
+        shadow_spp: 1,
+        distributed_tracing: false,
+        recursion_depth: 1,
+        denoise: false,
+        ..Default::default()
+    };
 
-    //app.run()?;
+    let scene = scene.with_config(config);
+
+    let mut app = app::App::new(scene);
+
+    //thruster.screenshot("screenshot.png", 4096.0, 2160.0);
+
+    app.run()?;
     Ok(())
 }
