@@ -106,52 +106,52 @@ pub fn make_world<'a>() -> Result<Scene<'a>, String> {
         texture: green,
     };
 
-    let obj = parser::parse("./objs/teapot.obj".to_string());
+    let obj = parser::parse("./objs/cube.obj".to_string());
     let mut scene: Vec<Box<dyn Intersectable + Sync>> = Vec::new();
-    //for (avt, bvt, cvt) in obj.triangles.iter() {
-    //scene.push(Box::new(Triangle {
-    //a: Vertex::from_parsed(avt),
-    //b: Vertex::from_parsed(bvt),
-    //c: Vertex::from_parsed(cvt),
-    //material: refl_mat,
-    //}))
-    //}
+    for (avt, bvt, cvt) in obj.triangles.iter() {
+        scene.push(Box::new(Triangle {
+            a: Vertex::from_parsed(avt),
+            b: Vertex::from_parsed(bvt),
+            c: Vertex::from_parsed(cvt),
+            material: refl_mat,
+        }))
+    }
     scene.extend::<Vec<Box<dyn Intersectable + Sync>>>(vec![
         Box::new(Plane {
             origin: Vec3::new(0.0, 0.0, 0.0),
             normal: Vec3::new(0.0, 1.0, 0.0).normalized(),
             material: plane_mat,
         }),
-        Box::new(Plane {
-            origin: Vec3::new(-200.0, 0.0, 100.0),
-            normal: Vec3::new(1.0, 0.0, 0.0).normalized(),
-            material: red_mat,
-        }),
-        Box::new(Plane {
-            origin: Vec3::new(0.0, 0.0, 100.0),
-            normal: Vec3::new(0.0, 0.0, -1.0).normalized(),
-            material: grey_mat,
-        }),
-        Box::new(Plane {
-            origin: Vec3::new(0.0, 400.0, 100.0),
-            normal: Vec3::new(0.0, -1.0, 0.0).normalized(),
-            material: grey_mat,
-        }),
-        Box::new(Plane {
-            origin: Vec3::new(200.0, 0.0, 100.0),
-            normal: Vec3::new(-1.0, 0.0, 0.0).normalized(),
-            material: green_mat,
-        }),
+        //Box::new(Plane {
+        //origin: Vec3::new(-200.0, 0.0, 100.0),
+        //normal: Vec3::new(1.0, 0.0, 0.0).normalized(),
+        //material: red_mat,
+        //}),
+        //Box::new(Plane {
+        //origin: Vec3::new(0.0, 0.0, 100.0),
+        //normal: Vec3::new(0.0, 0.0, -1.0).normalized(),
+        //material: grey_mat,
+        //}),
+        //Box::new(Plane {
+        //origin: Vec3::new(0.0, 400.0, 100.0),
+        //normal: Vec3::new(0.0, -1.0, 0.0).normalized(),
+        //material: grey_mat,
+        //}),
+        //Box::new(Plane {
+        //origin: Vec3::new(200.0, 0.0, 100.0),
+        //normal: Vec3::new(-1.0, 0.0, 0.0).normalized(),
+        //material: green_mat,
+        //}),
         Box::new(Sphere {
             origin: Vec3::new(50.0, 125.0, 0.0),
             radius: 25.0,
             material: refl_mat,
         }),
-        Box::new(Sphere {
-            origin: Vec3::new(0.0, 50.0, 0.0),
-            radius: 50.0,
-            material: red_mat,
-        }),
+        //Box::new(Sphere {
+        //origin: Vec3::new(0.0, 50.0, 0.0),
+        //radius: 50.0,
+        //material: red_mat,
+        //}),
     ]);
 
     #[allow(unused_mut)]
@@ -162,7 +162,7 @@ pub fn make_world<'a>() -> Result<Scene<'a>, String> {
         lights: vec![
             Box::new(PointLight {
                 origin: Vec3::new(-50.0, 350.0, 50.0),
-                color: Vec3::new(255.0, 255.0, 0.0) * 1.0,
+                color: Vec3::new(255.0, 255.0, 255.0) * 1.0,
             }),
             Box::new(PointLight {
                 origin: Vec3::new(50.0, 50.0, 50.0),

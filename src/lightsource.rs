@@ -42,15 +42,17 @@ impl Lightsource for PointLight {
                         (rng.gen::<f64>() - 0.5) * blurriness,
                         (rng.gen::<f64>() - 0.5) * blurriness,
                     ));
-                let ray = Ray {
-                    origin: intersection.origin + intersection.normal * 0.001,
-                    direction: light_ray,
-                    level: 0,
-                };
-                let intersections = ray.cast(&scene);
-                for inter in intersections.iter() {
-                    if intersection.origin.distance(&self.origin) > inter.0.t {
-                        continue 'sample_loop;
+                if scene.config.shadows {
+                    let ray = Ray {
+                        origin: intersection.origin + intersection.normal * 0.001,
+                        direction: light_ray,
+                        level: 0,
+                    };
+                    let intersections = ray.cast(&scene);
+                    for inter in intersections.iter() {
+                        if intersection.origin.distance(&self.origin) > inter.0.t {
+                            continue 'sample_loop;
+                        }
                     }
                 }
 
@@ -63,15 +65,17 @@ impl Lightsource for PointLight {
             amt
         } else {
             let light_ray = (self.origin - intersection.origin).normalized();
-            let ray = Ray {
-                origin: intersection.origin + intersection.normal * 0.001,
-                direction: light_ray,
-                level: 0,
-            };
-            let intersections = ray.cast(&scene);
-            for inter in intersections.iter() {
-                if intersection.origin.distance(&self.origin) > inter.0.t {
-                    return 0.0;
+            if scene.config.shadows {
+                let ray = Ray {
+                    origin: intersection.origin + intersection.normal * 0.001,
+                    direction: light_ray,
+                    level: 0,
+                };
+                let intersections = ray.cast(&scene);
+                for inter in intersections.iter() {
+                    if intersection.origin.distance(&self.origin) > inter.0.t {
+                        return 0.0;
+                    }
                 }
             }
 

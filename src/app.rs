@@ -51,6 +51,7 @@ impl<'a> App<'a> {
         let mut last_frame = Instant::now();
         let mut closed = false;
         let mut dimensions: [i32; 2] = [3840, 2160];
+
         while !closed {
             let gl_window = display.gl_window();
             let window = gl_window.window();
@@ -80,42 +81,7 @@ impl<'a> App<'a> {
             let mut ui = imgui.frame();
             profiler.draw_ui(delta_time, &mut ui);
 
-            imgui::Window::new(&ui, im_str!("Config"))
-                .size([400.0, 175.0], Condition::FirstUseEver)
-                .build(|| {
-                    ui.checkbox(
-                        im_str!("Distributed tracing"),
-                        &mut self.scene.config.distributed_tracing,
-                    );
-                    ui.slider_int(
-                        im_str!("Shadow SPP"),
-                        &mut self.scene.config.shadow_spp,
-                        1,
-                        15,
-                    )
-                    .build();
-                    ui.slider_int(
-                        im_str!("Reflection SPP"),
-                        &mut self.scene.config.reflection_spp,
-                        1,
-                        15,
-                    )
-                    .build();
-                    ui.slider_int(
-                        im_str!("Refraction SPP"),
-                        &mut self.scene.config.refraction_spp,
-                        1,
-                        15,
-                    )
-                    .build();
-                    ui.slider_int(
-                        im_str!("Recursion depth"),
-                        &mut self.scene.config.recursion_depth,
-                        1,
-                        15,
-                    )
-                    .build();
-                });
+            self.scene.config.draw_ui(&mut ui);
 
             imgui::Window::new(&ui, im_str!("Screenshot"))
                 .size([300.0, 150.0], Condition::FirstUseEver)
@@ -154,7 +120,7 @@ impl<'a> App<'a> {
 
             handle_keys(&keystate, &mut self.scene, delta_time as f64);
 
-            let image = self.scene.render_to_buffer(640.0, 360.0);
+            let image = self.scene.new_render(640.0, 360.0);
             let image_dimensions = image.dimensions();
             let raw_pixels = image.into_raw();
 

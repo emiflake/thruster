@@ -88,7 +88,7 @@ impl Ray {
         }
         let n_dot_d = inter.normal.dot(&self.direction);
         let refr_color = {
-            if self.level <= 0 || !mat.transparency.is_transparent() {
+            if self.level <= 0 || !mat.transparency.is_transparent() || !scene.config.reflections {
                 Vec3::ORIGIN
             } else {
                 let ior = mat.transparency.index_of_refraction;
@@ -101,15 +101,21 @@ impl Ray {
                 };
                 match ray.color_function(ray.cast(scene), scene) {
                     Some(color) => color,
-                    _ => scene
-                        .skybox
-                        .calc_color(scene, ray.direction)
-                        .unwrap_or(Vec3::ORIGIN),
+                    _ => {
+                        if scene.config.skybox {
+                            scene
+                                .skybox
+                                .calc_color(scene, ray.direction)
+                                .unwrap_or(Vec3::ORIGIN)
+                        } else {
+                            Vec3::ORIGIN
+                        }
+                    }
                 }
             }
         };
         let refl_color = {
-            if self.level == 0 || !mat.reflectivity.is_reflective() {
+            if self.level == 0 || !mat.reflectivity.is_reflective() || !scene.config.reflections {
                 Vec3::ORIGIN
             } else {
                 if scene.config.distributed_tracing {
@@ -136,11 +142,15 @@ impl Ray {
                             + match ray.color_function(ray.cast(scene), scene) {
                                 Some(color) => color / f64::from(spp),
                                 _ => {
-                                    (scene
-                                        .skybox
-                                        .calc_color(scene, ray.direction)
-                                        .unwrap_or(Vec3::ORIGIN))
-                                        / f64::from(spp)
+                                    if scene.config.skybox {
+                                        (scene
+                                            .skybox
+                                            .calc_color(scene, ray.direction)
+                                            .unwrap_or(Vec3::ORIGIN))
+                                            / f64::from(spp)
+                                    } else {
+                                        Vec3::ORIGIN
+                                    }
                                 }
                             };
                     }
@@ -154,10 +164,16 @@ impl Ray {
                     };
                     match ray.color_function(ray.cast(scene), scene) {
                         Some(color) => color,
-                        _ => scene
-                            .skybox
-                            .calc_color(scene, ray.direction)
-                            .unwrap_or(Vec3::ORIGIN),
+                        _ => {
+                            if scene.config.skybox {
+                                scene
+                                    .skybox
+                                    .calc_color(scene, ray.direction)
+                                    .unwrap_or(Vec3::ORIGIN)
+                            } else {
+                                Vec3::ORIGIN
+                            }
+                        }
                     }
                 }
             }

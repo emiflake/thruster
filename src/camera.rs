@@ -52,9 +52,11 @@ impl PerspectiveCamera {
     }
 }
 
+const DISTRIB_CAMERA: bool = false;
+
 impl Camera for PerspectiveCamera {
     fn project_rays(&self, (sx, sy): (f64, f64), (w, h): (f64, f64), scene: &Scene) -> Vec<Ray> {
-        if scene.config.distributed_tracing {
+        if DISTRIB_CAMERA && scene.config.distributed_tracing {
             let mut rng = rand::thread_rng();
             let aspect_ratio = w / h;
             let px = (2.0 * ((sx + 0.5) / w) - 1.0)

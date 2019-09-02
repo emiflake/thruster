@@ -39,7 +39,7 @@ impl Scene<'_> {
 
     pub fn screenshot(&self, filename: &'static str, w: f64, h: f64) -> Result<(), String> {
         let before = SystemTime::now();
-        let screenshot = self.render_to_buffer(w, h);
+        let screenshot = self.new_render(w, h);
 
         screenshot
             .save_with_format(filename, image::ImageFormat::PNG)
@@ -55,43 +55,75 @@ impl Scene<'_> {
         Ok(())
     }
 
-    pub fn render_to_buffer(&self, w: f64, h: f64) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
+    pub fn new_render(&self, w: f64, h: f64) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
         let mut buf = ImageBuffer::new(w as u32, h as u32);
-        let mut pool = Pool::new(12);
-        pool.scoped(|scoped| {
-            for (_, row) in buf.enumerate_rows_mut() {
-                scoped.execute(move || {
-                    for (x, y, pix) in row {
-                        let mut col = Vec3::ORIGIN;
-                        let rays =
-                            self.camera
-                                .project_rays((f64::from(x), f64::from(y)), (w, h), &self);
-                        for ray in rays {
-                            let intersections = ray.cast(&self);
-                            if let Some(color) = ray.color_function(intersections, self) {
-                                col = col + color;
-                            } else {
-                                col = col
-                                    + self
-                                        .skybox
-                                        .calc_color(self, ray.direction)
-                                        .unwrap_or(Vec3::ORIGIN);
+
+        self.render_to_buffer(w, h, &mut buf);
+
+        buf
+    }
+
+    pub fn render_to_buffer(&self, w: f64, h: f64, buf: &mut ImageBuffer<Rgba<u8>, Vec<u8>>) {
+        if self.config.multi_thread {
+            let mut pool = Pool::new(12);
+            pool.scoped(|scoped| {
+                for (_, row) in buf.enumerate_rows_mut() {
+                    scoped.execute(move || {
+                        for (x, y, pix) in row {
+                            let mut col = Vec3::ORIGIN;
+                            let rays = self.camera.project_rays(
+                                (f64::from(x), f64::from(y)),
+                                (w, h),
+                                &self,
+                            );
+                            for ray in rays {
+                                let intersections = ray.cast(&self);
+                                if let Some(color) = ray.color_function(intersections, self) {
+                                    col = col + color;
+                                } else {
+                                    col = col
+                                        + if self.config.skybox {
+                                            self.skybox
+                                                .calc_color(self, ray.direction)
+                                                .unwrap_or(Vec3::ORIGIN)
+                                        } else {
+                                            Vec3::ORIGIN
+                                        };
+                                }
                             }
+                            *pix = Rgba([col.x as u8, col.y as u8, col.z as u8, 255]);
                         }
-                        *pix = Rgba([col.x as u8, col.y as u8, col.z as u8, 255]);
+                    })
+                }
+            });
+        } else {
+            for (_, row) in buf.enumerate_rows_mut() {
+                for (x, y, pix) in row {
+                    let mut col = Vec3::ORIGIN;
+                    let rays =
+                        self.camera
+                            .project_rays((f64::from(x), f64::from(y)), (w, h), &self);
+                    for ray in rays {
+                        let intersections = ray.cast(&self);
+                        if let Some(color) = ray.color_function(intersections, self) {
+                            col = col + color;
+                        } else {
+                            col = col
+                                + self
+                                    .skybox
+                                    .calc_color(self, ray.direction)
+                                    .unwrap_or(Vec3::ORIGIN);
+                        }
                     }
-                })
+                    *pix = Rgba([col.x as u8, col.y as u8, col.z as u8, 255]);
+                }
             }
-        });
+        }
 
         let denoiser = crate::denoise::Denoiser;
 
-        buf = if self.config.denoise {
-            denoiser.denoise(buf)
-        } else {
-            buf
-        };
-
-        buf
+        if self.config.denoise {
+            denoiser.denoise(buf);
+        }
     }
 }

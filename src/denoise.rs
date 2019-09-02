@@ -39,10 +39,7 @@ impl Denoiser {
         //ImageBuffer::from_vec(w, h, out_vec.iter().map(|p|*p as u8).collect()).expect("Could not make image buffer")
     }
 
-    pub fn denoise(
-        &self,
-        image_buf: ImageBuffer<Rgba<u8>, Vec<u8>>,
-    ) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
+    pub fn denoise(&self, image_buf: &mut ImageBuffer<Rgba<u8>, Vec<u8>>) {
         let (width, height) = (image_buf.width(), image_buf.height());
 
         let in_vec = Self::create_input_vec(image_buf.clone());
@@ -59,6 +56,6 @@ impl Denoiser {
 
         //image_buf
 
-        Self::create_output_image((width, height), out_vec)
+        *image_buf = Self::create_output_image((width, height), out_vec);
     }
 }
