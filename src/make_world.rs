@@ -43,7 +43,7 @@ pub fn make_world<'a>() -> Result<Scene<'a>, String> {
         c_diffuse: 0.3,
         reflectivity: Reflectivity {
             amount: 0.7,
-            blurriness: 1.0,
+            blurriness: 0.5,
         },
         c_ambient: 0.0,
         transparency: Transparency::not_transparent(),
@@ -74,7 +74,7 @@ pub fn make_world<'a>() -> Result<Scene<'a>, String> {
         c_ambient: 0.0,
         transparency: Transparency {
             amount: 1.0,
-            blurriness: 0.0,
+            blurriness: 0.4,
             index_of_refraction: 1.4,
         },
         texture: red,
@@ -122,26 +122,26 @@ pub fn make_world<'a>() -> Result<Scene<'a>, String> {
             normal: Vec3::new(0.0, 1.0, 0.0).normalized(),
             material: plane_mat,
         }),
-        //Box::new(Plane {
-        //origin: Vec3::new(-200.0, 0.0, 100.0),
-        //normal: Vec3::new(1.0, 0.0, 0.0).normalized(),
-        //material: red_mat,
-        //}),
-        //Box::new(Plane {
-        //origin: Vec3::new(0.0, 0.0, 100.0),
-        //normal: Vec3::new(0.0, 0.0, -1.0).normalized(),
-        //material: grey_mat,
-        //}),
-        //Box::new(Plane {
-        //origin: Vec3::new(0.0, 400.0, 100.0),
-        //normal: Vec3::new(0.0, -1.0, 0.0).normalized(),
-        //material: grey_mat,
-        //}),
-        //Box::new(Plane {
-        //origin: Vec3::new(200.0, 0.0, 100.0),
-        //normal: Vec3::new(-1.0, 0.0, 0.0).normalized(),
-        //material: green_mat,
-        //}),
+        Box::new(Plane {
+            origin: Vec3::new(-200.0, 0.0, 100.0),
+            normal: Vec3::new(1.0, 0.0, 0.0).normalized(),
+            material: red_mat,
+        }),
+        Box::new(Plane {
+            origin: Vec3::new(0.0, 0.0, 100.0),
+            normal: Vec3::new(0.0, 0.0, -1.0).normalized(),
+            material: grey_mat,
+        }),
+        Box::new(Plane {
+            origin: Vec3::new(0.0, 400.0, 100.0),
+            normal: Vec3::new(0.0, -1.0, 0.0).normalized(),
+            material: grey_mat,
+        }),
+        Box::new(Plane {
+            origin: Vec3::new(200.0, 0.0, 100.0),
+            normal: Vec3::new(-1.0, 0.0, 0.0).normalized(),
+            material: green_mat,
+        }),
         Box::new(Sphere {
             origin: Vec3::new(50.0, 125.0, 0.0),
             radius: 25.0,
@@ -159,10 +159,16 @@ pub fn make_world<'a>() -> Result<Scene<'a>, String> {
         camera: PerspectiveCamera::new(Vec3::new(0.0, 50.0, -200.0)),
         config: RenderConfig::default(),
         shapes: scene,
-        lights: vec![Box::new(PointLight {
-            origin: Vec3::new(-50.0, 350.0, 50.0),
-            color: Vec3::new(255.0, 255.0, 255.0) * 0.25,
-        })],
+        lights: vec![
+            Box::new(PointLight {
+                origin: Vec3::new(-50.0, 350.0, 50.0),
+                color: Vec3::new(255.0, 255.0, 0.0) * 1.0,
+            }),
+            Box::new(PointLight {
+                origin: Vec3::new(50.0, 50.0, 50.0),
+                color: Vec3::new(255.0, 0.0, 255.0) * 1.0,
+            }),
+        ],
         texture_map,
         skybox,
     };

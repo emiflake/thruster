@@ -50,7 +50,7 @@ pub fn main() -> std::result::Result<(), String> {
         refraction_spp: 1,
         shadow_spp: 1,
         distributed_tracing: false,
-        recursion_depth: 1,
+        recursion_depth: 5,
         denoise: false,
         ..Default::default()
     };

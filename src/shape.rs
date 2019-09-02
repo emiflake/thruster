@@ -83,7 +83,8 @@ impl Ray {
         };
         let mut diff_color = Vec3::ORIGIN;
         for light in scene.lights.iter() {
-            diff_color = diff_color + orig_color * light.luminosity_at(scene, &inter);
+            diff_color = diff_color
+                + orig_color * (light.color() / 255.0) * light.luminosity_at(scene, &inter);
         }
         let n_dot_d = inter.normal.dot(&self.direction);
         let refr_color = {
