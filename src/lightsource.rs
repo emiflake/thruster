@@ -43,11 +43,11 @@ impl Lightsource for PointLight {
                         (rng.gen::<f64>() - 0.5) * blurriness,
                     ));
                 if scene.config.shadows {
-                    let ray = Ray {
-                        origin: intersection.origin + intersection.normal * 0.001,
-                        direction: light_ray,
-                        level: 0,
-                    };
+                    let ray = Ray::new(
+                        intersection.origin + intersection.normal * 0.001,
+                        light_ray,
+                        0,
+                    );
                     let intersections = ray.cast(&scene);
                     for inter in intersections.iter() {
                         if intersection.origin.distance(&self.origin) > inter.0.t {
@@ -66,11 +66,11 @@ impl Lightsource for PointLight {
         } else {
             let light_ray = (self.origin - intersection.origin).normalized();
             if scene.config.shadows {
-                let ray = Ray {
-                    origin: intersection.origin + intersection.normal * 0.001,
-                    direction: light_ray,
-                    level: 0,
-                };
+                let ray = Ray::new(
+                    intersection.origin + intersection.normal * 0.001,
+                    light_ray,
+                    0,
+                );
                 let intersections = ray.cast(&scene);
                 for inter in intersections.iter() {
                     if intersection.origin.distance(&self.origin) > inter.0.t {

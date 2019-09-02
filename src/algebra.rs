@@ -161,6 +161,7 @@ impl Vec3 {
         Rgba([self.x as u8, self.y as u8, self.z as u8, 255])
     }
 
+    // Warning, incomplete, and possibly faulty.
     pub fn rotate(self, theta: Vec3) -> Self {
         let v = Vec3 {
             x: self.x,
@@ -173,6 +174,31 @@ impl Vec3 {
             z: -v.x * theta.y.sin() + theta.y.cos() * v.z,
         };
         w
+    }
+
+    pub fn min(self, rhs: Self) -> Self {
+        Vec3 {
+            x: self.x.min(rhs.x),
+            y: self.y.min(rhs.y),
+            z: self.z.min(rhs.z),
+        }
+    }
+
+    pub fn max(self, rhs: Self) -> Self {
+        Vec3 {
+            x: self.x.max(rhs.x),
+            y: self.y.max(rhs.y),
+            z: self.z.max(rhs.z),
+        }
+    }
+
+    pub fn dim(self, dimension: i32) -> f64 {
+        match dimension % 3 {
+            0 => self.x,
+            1 => self.y,
+            2 => self.z,
+            _ => self.x,
+        }
     }
 }
 

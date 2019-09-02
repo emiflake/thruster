@@ -13,6 +13,7 @@
 use std::time::SystemTime;
 
 use crate::algebra::Vec3;
+use crate::bvh::BVHTree;
 use crate::camera::{Camera, PerspectiveCamera};
 use crate::image::{ImageBuffer, Rgba};
 use crate::lightsource::Lightsource;
@@ -25,7 +26,8 @@ use scoped_threadpool::Pool;
 
 pub struct Scene<'a> {
     pub camera: PerspectiveCamera,
-    pub shapes: Vec<Shape<'a>>,
+    //pub shapes: Vec<Shape<'a>>,
+    pub bvh: BVHTree<'a>,
     pub lights: Vec<Box<dyn Lightsource + Sync + 'a>>,
     pub texture_map: TextureMap,
     pub skybox: Skybox,

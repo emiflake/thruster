@@ -16,13 +16,32 @@ use crate::scene::Scene;
 
 use rand::prelude::*;
 
-pub type Shape<'a> = Box<dyn Intersectable + 'a + Sync>;
+pub type Shape<'a> = Box<dyn SceneObject + 'a + Sync>;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Ray {
     pub origin: Vec3,
     pub direction: Vec3,
     pub level: i32,
+
+    pub inv_dir: Vec3,
+    pub sign: Vec3,
+}
+
+impl Ray {
+    pub fn new(origin: Vec3, direction: Vec3, level: i32) -> Self {
+        Self {
+            origin,
+            direction,
+            level,
+            inv_dir: Vec3::new(1.0 / direction.x, 1.0 / direction.y, 1.0 / direction.z),
+            sign: Vec3::new(
+                if direction.x > 0.0 { 1.0 } else { 0.0 },
+                if direction.y > 0.0 { 1.0 } else { 0.0 },
+                if direction.z > 0.0 { 1.0 } else { 0.0 },
+            ),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -33,24 +52,80 @@ pub struct Intersection {
     pub text_pos: Vec2,
 }
 
+pub struct BoundingBox {
+    pub min_vector: Vec3,
+    pub max_vector: Vec3,
+}
+
+impl BoundingBox {
+    fn bounds(&self, sign: f64) -> Vec3 {
+        if sign == 1.0 {
+            self.min_vector
+        } else {
+            self.max_vector
+        }
+    }
+
+    pub fn centre(&self) -> Vec3 {
+        (self.min_vector + self.max_vector) / 2.0
+    }
+
+    pub fn intersects_with(&self, ray: &Ray) -> bool {
+        let mut tmin = (self.bounds(ray.sign.x).x - ray.origin.x) * ray.inv_dir.x;
+        let mut tmax = (self.bounds(1.0 - ray.sign.x).x - ray.origin.x) * ray.inv_dir.x;
+        let tymin = (self.bounds(ray.sign.y).y - ray.origin.y) * ray.inv_dir.y;
+        let tymax = (self.bounds(1.0 - ray.sign.y).y - ray.origin.y) * ray.inv_dir.y;
+
+        if (tmin > tymax) || (tymin > tmax) {
+            return false;
+        }
+
+        if tymin > tmin {
+            tmin = tymin;
+        }
+        if tymax < tmax {
+            tmax = tymax;
+        }
+
+        let tzmin = (self.bounds(ray.sign.z).z - ray.origin.z) * ray.inv_dir.z;
+        let tzmax = (self.bounds(1.0 - ray.sign.z).z - ray.origin.z) * ray.inv_dir.z;
+
+        if (tmin > tzmax) || (tzmin > tmax) {
+            return false;
+        }
+
+        if tzmin > tmin {
+            tmin = tzmin;
+        }
+        if tzmax < tmax {
+            tmax = tzmax;
+        }
+
+        let mut t = tmin;
+
+        if t < 0.0 {
+            t = tmax;
+            if t < 0.0 {
+                return false;
+            }
+        }
+
+        true
+    }
+}
+
 use crate::material::Material;
-pub trait Intersectable {
+pub trait SceneObject {
     fn mat(&self) -> &Material;
     /* Whether or not object intersects with the ray */
     fn do_intersect(&self, ray: &Ray) -> Option<Intersection>;
+
+    fn bounding_box(&self) -> BoundingBox;
 }
 
 impl Ray {
     pub fn cast<'a>(&self, scene: &'a Scene) -> Vec<(Intersection, &'a Shape<'a>)> {
-        let mut intersections: Vec<(Intersection, &Shape<'a>)> = Vec::new();
-
-        for shape in scene.shapes.iter() {
-            if let Some(intersection) = shape.do_intersect(self) {
-                intersections.push((intersection, shape));
-            }
-        }
-
-        intersections
+        scene.bvh.intersect(self)
     }
 
     pub fn color_function<'a>(
@@ -94,11 +169,7 @@ impl Ray {
                 let ior = mat.transparency.index_of_refraction;
                 let eta = 2.0 - ior;
                 let o = self.direction * eta - inter.normal * (-n_dot_d + eta * n_dot_d);
-                let ray = Ray {
-                    origin: inter.origin - inter.normal * 0.01,
-                    direction: o,
-                    level: self.level - 1,
-                };
+                let ray = Ray::new(inter.origin - inter.normal * 0.01, o, self.level - 1);
                 match ray.color_function(ray.cast(scene), scene) {
                     Some(color) => color,
                     _ => {
@@ -129,15 +200,15 @@ impl Ray {
 
                     for _ in 0..spp {
                         let reflection_dir = self.direction - (n_dot_d * 2.0) * inter.normal;
-                        let ray = Ray {
-                            origin: inter.origin + inter.normal * 0.01,
-                            direction: reflection_dir.rotate(Vec3::new(
+                        let ray = Ray::new(
+                            inter.origin + inter.normal * 0.01,
+                            reflection_dir.rotate(Vec3::new(
                                 (rng.gen::<f64>() - 0.5) * blurriness,
                                 (rng.gen::<f64>() - 0.5) * blurriness,
                                 (rng.gen::<f64>() - 0.5) * blurriness,
                             )),
-                            level: self.level - 1,
-                        };
+                            self.level - 1,
+                        );
                         col = col
                             + match ray.color_function(ray.cast(scene), scene) {
                                 Some(color) => color / f64::from(spp),
@@ -157,11 +228,11 @@ impl Ray {
                     col
                 } else {
                     let reflection_dir = self.direction - (n_dot_d * 2.0) * inter.normal;
-                    let ray = Ray {
-                        origin: inter.origin + inter.normal * 0.01,
-                        direction: reflection_dir,
-                        level: self.level - 1,
-                    };
+                    let ray = Ray::new(
+                        inter.origin + inter.normal * 0.01,
+                        reflection_dir,
+                        self.level - 1,
+                    );
                     match ray.color_function(ray.cast(scene), scene) {
                         Some(color) => color,
                         _ => {
@@ -195,7 +266,7 @@ pub struct Sphere {
     pub material: Material,
 }
 
-impl Intersectable for Sphere {
+impl SceneObject for Sphere {
     fn mat(&self) -> &Material {
         &self.material
     }
@@ -239,6 +310,13 @@ impl Intersectable for Sphere {
             text_pos,
         })
     }
+
+    fn bounding_box(&self) -> BoundingBox {
+        BoundingBox {
+            min_vector: self.origin - Vec3::new(1.0, 1.0, 1.0) * self.radius,
+            max_vector: self.origin + Vec3::new(1.0, 1.0, 1.0) * self.radius,
+        }
+    }
 }
 
 pub struct Plane {
@@ -248,7 +326,7 @@ pub struct Plane {
     pub material: Material,
 }
 
-impl Intersectable for Plane {
+impl SceneObject for Plane {
     fn mat(&self) -> &Material {
         &self.material
     }
@@ -268,6 +346,15 @@ impl Intersectable for Plane {
             })
         }
     }
+
+    fn bounding_box(&self) -> BoundingBox {
+        let far = Vec3::new(1000.0, 1000.0, 1000.0);
+
+        BoundingBox {
+            min_vector: self.origin - far + self.normal * far,
+            max_vector: self.origin + far - self.normal * far,
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -279,7 +366,7 @@ pub struct Triangle {
     pub material: Material,
 }
 
-impl Intersectable for Triangle {
+impl SceneObject for Triangle {
     fn mat(&self) -> &Material {
         &self.material
     }
@@ -325,5 +412,12 @@ impl Intersectable for Triangle {
                 self.a.uv.y * (1.0 - u - v) + self.b.uv.y * u + self.c.uv.y * v,
             ),
         })
+    }
+
+    fn bounding_box(&self) -> BoundingBox {
+        BoundingBox {
+            min_vector: self.a.origin.min(self.b.origin).min(self.c.origin),
+            max_vector: self.a.origin.max(self.b.origin).max(self.c.origin),
+        }
     }
 }

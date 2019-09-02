@@ -77,11 +77,11 @@ impl Camera for PerspectiveCamera {
                     (rng.gen::<f64>() - 0.5) * blurriness,
                     (rng.gen::<f64>() - 0.5) * blurriness,
                 ));
-                rays.push(Ray {
-                    origin: self.position,
-                    direction: sample_direction,
-                    level: scene.config.recursion_depth,
-                });
+                rays.push(Ray::new(
+                    self.position,
+                    sample_direction,
+                    scene.config.recursion_depth,
+                ));
             }
             rays
         } else {
@@ -94,11 +94,11 @@ impl Camera for PerspectiveCamera {
 
             let direction = Vec3::new(px, py, 1.0).normalized().rotate(self.rotation);
 
-            vec![Ray {
-                origin: self.position,
+            vec![Ray::new(
+                self.position,
                 direction,
-                level: scene.config.recursion_depth,
-            }]
+                scene.config.recursion_depth,
+            )]
         }
     }
 }
