@@ -101,11 +101,11 @@ pub fn main() -> std::result::Result<(), String> {
         transparency: Transparency::not_transparent(),
         texture: red,
     };
-    let grey = MatTex::Color(Vec3::new(100.0, 100.0, 100.0));
+    let grey = MatTex::Color(Vec3::new(255.0, 255.0, 255.0));
     let grey_mat = Material {
-        c_diffuse: 0.7,
+        c_diffuse: 1.0,
         reflectivity: Reflectivity::not_reflective(),
-        c_ambient: 0.3,
+        c_ambient: 0.0,
         transparency: Transparency::not_transparent(),
         texture: grey,
     };
@@ -138,7 +138,7 @@ pub fn main() -> std::result::Result<(), String> {
         transparency: Transparency::not_transparent(),
         texture: black,
     };
-    let green = MatTex::Color(Vec3::new(0.0, 170.0, 0.0));
+    let green = MatTex::Color(Vec3::new(0.0, 175.0, 0.0));
     let green_mat = Material {
         c_diffuse: 1.0,
         reflectivity: Reflectivity::not_reflective(),
@@ -150,7 +150,7 @@ pub fn main() -> std::result::Result<(), String> {
     let obj = parser::parse("./objs/teapot.obj".to_string());
     let mut scene: Vec<Shape> = Vec::new();
     for (avt, bvt, cvt) in obj.triangles.iter() {
-        scene.push(Box::new(Triangle {
+        scene.push(Shape::Triangle(Triangle {
             a: Vertex::from_parsed(avt),
             b: Vertex::from_parsed(bvt),
             c: Vertex::from_parsed(cvt),
@@ -158,32 +158,32 @@ pub fn main() -> std::result::Result<(), String> {
         }))
     }
     scene.extend::<Vec<Shape>>(vec![
-        Box::new(Plane {
+        Shape::Plane(Plane {
             origin: Vec3::new(0.0, 0.0, 0.0),
             normal: Vec3::new(0.0, 1.0, 0.0).normalized(),
             material: plane_mat,
         }),
-        //Box::new(Plane {
-        //origin: Vec3::new(-200.0, 0.0, 100.0),
-        //normal: Vec3::new(1.0, 0.0, 0.0).normalized(),
-        //material: red_mat,
-        //}),
-        //Box::new(Plane {
-        //origin: Vec3::new(0.0, 0.0, 100.0),
-        //normal: Vec3::new(0.0, 0.0, -1.0).normalized(),
-        //material: grey_mat,
-        //}),
-        //Box::new(Plane {
-        //origin: Vec3::new(0.0, 400.0, 100.0),
-        //normal: Vec3::new(0.0, -1.0, 0.0).normalized(),
-        //material: grey_mat,
-        //}),
-        //Box::new(Plane {
-        //origin: Vec3::new(200.0, 0.0, 100.0),
-        //normal: Vec3::new(-1.0, 0.0, 0.0).normalized(),
-        //material: green_mat,
-        //}),
-        Box::new(Sphere {
+        Shape::Plane(Plane {
+            origin: Vec3::new(-200.0, 0.0, 100.0),
+            normal: Vec3::new(1.0, 0.0, 0.0).normalized(),
+            material: red_mat,
+        }),
+        Shape::Plane(Plane {
+            origin: Vec3::new(0.0, 0.0, 100.0),
+            normal: Vec3::new(0.0, 0.0, -1.0).normalized(),
+            material: grey_mat,
+        }),
+        Shape::Plane(Plane {
+            origin: Vec3::new(0.0, 400.0, 100.0),
+            normal: Vec3::new(0.0, -1.0, 0.0).normalized(),
+            material: grey_mat,
+        }),
+        Shape::Plane(Plane {
+            origin: Vec3::new(200.0, 0.0, 100.0),
+            normal: Vec3::new(-1.0, 0.0, 0.0).normalized(),
+            material: green_mat,
+        }),
+        Shape::Sphere(Sphere {
             origin: Vec3::new(50.0, 125.0, 0.0),
             radius: 25.0,
             material: refl_mat,
@@ -191,7 +191,7 @@ pub fn main() -> std::result::Result<(), String> {
     ]);
 
     use crate::bvh::BVHTree;
-    let bvh = BVHTree::construct(&mut scene).expect("Could not construct BVHTree");
+    let bvh = BVHTree::construct(scene.as_slice()).expect("Could not construct BVHTree");
 
     #[allow(unused_mut)]
     let mut scene = Scene {
@@ -203,10 +203,10 @@ pub fn main() -> std::result::Result<(), String> {
                 origin: Vec3::new(-50.0, 350.0, 50.0),
                 color: Vec3::new(255.0, 255.0, 255.0) * 1.0,
             }),
-            //Box::new(PointLight {
-            //origin: Vec3::new(50.0, 100.0, 50.0),
-            //color: Vec3::new(255.0, 255.0, 255.0) * 1.0,
-            //}),
+            Box::new(PointLight {
+                origin: Vec3::new(50.0, 100.0, 50.0),
+                color: Vec3::new(255.0, 255.0, 255.0) * 1.0,
+            }),
         ],
         texture_map,
         skybox,

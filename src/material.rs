@@ -15,7 +15,7 @@ use crate::algebra::{Vec2, Vec3};
 use crate::texture_map::TextureHandle;
 
 #[allow(dead_code)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum MatTex {
     Color(Vec3),
     Texture {
@@ -35,7 +35,7 @@ impl MatTex {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Transparency {
     pub index_of_refraction: f64,
     pub blurriness: f64,
@@ -56,7 +56,7 @@ impl Transparency {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Reflectivity {
     pub amount: f64,
     pub blurriness: f64,
@@ -75,7 +75,7 @@ impl Reflectivity {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Material {
     pub texture: MatTex,
     pub c_diffuse: f64,

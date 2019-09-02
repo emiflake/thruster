@@ -212,7 +212,7 @@ impl Clampable for Vec3 {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Vertex {
     pub origin: Vec3,
     pub normal: Vec3,

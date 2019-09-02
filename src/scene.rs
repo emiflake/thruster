@@ -27,7 +27,7 @@ use scoped_threadpool::Pool;
 pub struct Scene<'a> {
     pub camera: PerspectiveCamera,
     //pub shapes: Vec<Shape<'a>>,
-    pub bvh: BVHTree<'a>,
+    pub bvh: BVHTree,
     pub lights: Vec<Box<dyn Lightsource + Sync + 'a>>,
     pub texture_map: TextureMap,
     pub skybox: Skybox,

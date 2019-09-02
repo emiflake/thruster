@@ -16,7 +16,40 @@ use crate::scene::Scene;
 
 use rand::prelude::*;
 
-pub type Shape<'a> = Box<dyn SceneObject + 'a + Sync>;
+//pub type Shape<'a> = Box<dyn SceneObject + 'a + Sync>;
+
+#[derive(Debug, Clone)]
+pub enum Shape {
+    Sphere(Sphere),
+    Plane(Plane),
+    Triangle(Triangle),
+}
+
+impl SceneObject for Shape {
+    fn mat(&self) -> &Material {
+        match self {
+            Self::Sphere(s) => s.mat(),
+            Self::Plane(s) => s.mat(),
+            Self::Triangle(s) => s.mat(),
+        }
+    }
+
+    fn do_intersect(&self, ray: &Ray) -> Option<Intersection> {
+        match self {
+            Self::Sphere(s) => s.do_intersect(ray),
+            Self::Plane(s) => s.do_intersect(ray),
+            Self::Triangle(s) => s.do_intersect(ray),
+        }
+    }
+
+    fn bounding_box(&self) -> BoundingBox {
+        match self {
+            Self::Sphere(s) => s.bounding_box(),
+            Self::Plane(s) => s.bounding_box(),
+            Self::Triangle(s) => s.bounding_box(),
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Ray {
@@ -124,18 +157,21 @@ pub trait SceneObject {
 }
 
 impl Ray {
-    pub fn cast<'a>(&self, scene: &'a Scene) -> Vec<(Intersection, &'a Shape<'a>)> {
-        scene.bvh.intersect(self)
+    pub fn cast<'a>(&self, scene: &'a Scene) -> Vec<(Intersection, &'a Shape)> {
+        if let Some(is) = scene.bvh.intersect(self) {
+            vec![is]
+        } else {
+            Vec::new()
+        }
     }
 
     pub fn color_function<'a>(
         &self,
-        intersections: Vec<(Intersection, &Shape<'a>)>,
+        intersections: Vec<(Intersection, &Shape)>,
         scene: &Scene,
     ) -> Option<Vec3> {
         let mut rng = rand::thread_rng();
-        let mut closest;
-        closest = intersections.first()?;
+        let mut closest = intersections.first()?;
         for intersection in intersections.iter() {
             if closest.0.t > intersection.0.t {
                 closest = intersection;
@@ -258,7 +294,7 @@ impl Ray {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Sphere {
     pub origin: Vec3,
     pub radius: f64,
@@ -319,6 +355,7 @@ impl SceneObject for Sphere {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Plane {
     pub origin: Vec3,
     pub normal: Vec3,
@@ -358,6 +395,7 @@ impl SceneObject for Plane {
 }
 
 #[allow(dead_code)]
+#[derive(Debug, Clone)]
 pub struct Triangle {
     pub a: Vertex,
     pub b: Vertex,
