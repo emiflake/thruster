@@ -40,6 +40,13 @@ impl std::ops::Mul<f64> for Vec3 {
     }
 }
 
+impl std::ops::Mul<Vec3> for Vec3 {
+    type Output = Vec3;
+    fn mul(self, rhs: Vec3) -> Vec3 {
+        Vec3::new(self.x * rhs.x, self.y * rhs.y, self.z * rhs.z)
+    }
+}
+
 impl std::ops::Mul<Vec3> for f64 {
     type Output = Vec3;
     fn mul(self, rhs: Vec3) -> Vec3 {
@@ -154,6 +161,7 @@ impl Vec3 {
         Rgba([self.x as u8, self.y as u8, self.z as u8, 255])
     }
 
+    // Warning, incomplete, and possibly faulty.
     pub fn rotate(self, theta: Vec3) -> Self {
         let v = Vec3 {
             x: self.x,
@@ -167,6 +175,31 @@ impl Vec3 {
         };
         w
     }
+
+    pub fn min(self, rhs: Self) -> Self {
+        Vec3 {
+            x: self.x.min(rhs.x),
+            y: self.y.min(rhs.y),
+            z: self.z.min(rhs.z),
+        }
+    }
+
+    pub fn max(self, rhs: Self) -> Self {
+        Vec3 {
+            x: self.x.max(rhs.x),
+            y: self.y.max(rhs.y),
+            z: self.z.max(rhs.z),
+        }
+    }
+
+    pub fn dim(self, dimension: i32) -> f64 {
+        match dimension % 3 {
+            0 => self.x,
+            1 => self.y,
+            2 => self.z,
+            _ => self.x,
+        }
+    }
 }
 
 impl Clampable for Vec3 {
@@ -179,21 +212,19 @@ impl Clampable for Vec3 {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Vertex {
     pub origin: Vec3,
     pub normal: Vec3,
     pub uv: Vec2,
 }
 
-
-    use crate::parser;
+use crate::parser;
 impl Vertex {
     #[allow(dead_code)]
     pub fn new(origin: Vec3, normal: Vec3, uv: Vec2) -> Self {
         Self { origin, normal, uv }
     }
-
 
     #[allow(dead_code)]
     pub fn from_parsed(vertex: &parser::Vertex3) -> Self {

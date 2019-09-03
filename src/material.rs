@@ -15,7 +15,7 @@ use crate::algebra::{Vec2, Vec3};
 use crate::texture_map::TextureHandle;
 
 #[allow(dead_code)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum MatTex {
     Color(Vec3),
     Texture {
@@ -35,9 +35,10 @@ impl MatTex {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Transparency {
     pub index_of_refraction: f64,
+    pub blurriness: f64,
     pub amount: f64,
 }
 
@@ -45,6 +46,7 @@ impl Transparency {
     pub fn not_transparent() -> Self {
         Self {
             index_of_refraction: 1.0,
+            blurriness: 0.0,
             amount: 0.0,
         }
     }
@@ -54,12 +56,31 @@ impl Transparency {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
+pub struct Reflectivity {
+    pub amount: f64,
+    pub blurriness: f64,
+}
+
+impl Reflectivity {
+    pub fn not_reflective() -> Self {
+        Self {
+            blurriness: 0.0,
+            amount: 0.0,
+        }
+    }
+
+    pub fn is_reflective(&self) -> bool {
+        self.amount > 0.0
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
 pub struct Material {
     pub texture: MatTex,
     pub c_diffuse: f64,
     pub c_ambient: f64,
-    pub c_reflection: f64,
+    pub reflectivity: Reflectivity,
     pub transparency: Transparency,
 }
 
@@ -70,7 +91,7 @@ impl Material {
             texture: tex,
             c_diffuse: 0.7,
             c_ambient: 0.3,
-            c_reflection: 0.0,
+            reflectivity: Reflectivity::not_reflective(),
             transparency: Transparency::not_transparent(),
         }
     }
@@ -80,7 +101,7 @@ impl Material {
             texture: tex,
             c_diffuse: 0.3,
             c_ambient: 0.0,
-            c_reflection: 0.7,
+            reflectivity: Reflectivity::not_reflective(),
             transparency: Transparency::not_transparent(),
         }
     }

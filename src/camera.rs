@@ -11,10 +11,17 @@
 /* ************************************************************************** */
 
 use crate::algebra::Vec3;
+use crate::scene::Scene;
 use crate::shape::Ray;
+use rand::prelude::*;
 
 pub trait Camera {
-    fn project_ray(&self, screen_pos: (f64, f64), screen_dim: (f64, f64)) -> Ray;
+    fn project_rays(
+        &self,
+        screen_pos: (f64, f64),
+        screen_dim: (f64, f64),
+        scene: &Scene,
+    ) -> Vec<Ray>;
 }
 
 pub struct PerspectiveCamera {
@@ -45,21 +52,53 @@ impl PerspectiveCamera {
     }
 }
 
+const DISTRIB_CAMERA: bool = false;
+
 impl Camera for PerspectiveCamera {
-    fn project_ray(&self, (sx, sy): (f64, f64), (w, h): (f64, f64)) -> Ray {
-        let aspect_ratio = w / h;
-        let px = (2.0 * ((sx + 0.5) / w) - 1.0)
-            * aspect_ratio
-            * (self.fov / 2.0 * std::f64::consts::PI / 180.0).tan();
-        let py =
-            (1.0 - 2.0 * ((sy + 0.5) / h)) * (self.fov / 2.0 * std::f64::consts::PI / 180.0).tan();
+    fn project_rays(&self, (sx, sy): (f64, f64), (w, h): (f64, f64), scene: &Scene) -> Vec<Ray> {
+        if DISTRIB_CAMERA && scene.config.distributed_tracing {
+            let mut rng = rand::thread_rng();
+            let aspect_ratio = w / h;
+            let px = (2.0 * ((sx + 0.5) / w) - 1.0)
+                * aspect_ratio
+                * (self.fov / 2.0 * std::f64::consts::PI / 180.0).tan();
+            let py = (1.0 - 2.0 * ((sy + 0.5) / h))
+                * (self.fov / 2.0 * std::f64::consts::PI / 180.0).tan();
 
-        let direction = Vec3::new(px, py, 1.0).normalized().rotate(self.rotation);
+            let direction = Vec3::new(px, py, 1.0).normalized().rotate(self.rotation);
 
-        Ray {
-            origin: self.position,
-            direction,
-            level: 10,
+            let blurriness = 0.0001;
+            let spp = if blurriness == 0.0 { 1 } else { 1 };
+
+            let mut rays: Vec<Ray> = Vec::with_capacity(spp);
+            for _ in 0..spp {
+                let sample_direction = direction.rotate(Vec3::new(
+                    (rng.gen::<f64>() - 0.5) * blurriness,
+                    (rng.gen::<f64>() - 0.5) * blurriness,
+                    (rng.gen::<f64>() - 0.5) * blurriness,
+                ));
+                rays.push(Ray::new(
+                    self.position,
+                    sample_direction,
+                    scene.config.recursion_depth,
+                ));
+            }
+            rays
+        } else {
+            let aspect_ratio = w / h;
+            let px = (2.0 * ((sx + 0.5) / w) - 1.0)
+                * aspect_ratio
+                * (self.fov / 2.0 * std::f64::consts::PI / 180.0).tan();
+            let py = (1.0 - 2.0 * ((sy + 0.5) / h))
+                * (self.fov / 2.0 * std::f64::consts::PI / 180.0).tan();
+
+            let direction = Vec3::new(px, py, 1.0).normalized().rotate(self.rotation);
+
+            vec![Ray::new(
+                self.position,
+                direction,
+                scene.config.recursion_depth,
+            )]
         }
     }
 }
