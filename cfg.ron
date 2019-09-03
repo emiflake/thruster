@@ -1,9 +1,9 @@
 (
     camera: (
         position: (
-            x: 0,
-            y: 50,
-            z: -200,
+            x: -29.59673088043928,
+            y: 154.68745090067387,
+            z: -318.08460984379053,
         ),
         rotation: (
             x: 0,
@@ -13,7 +13,7 @@
         fov: 60,
     ),
     skybox: (
-        handles: ((3), (4), (5), (6), (7), (8)),
+        handles: ("./skybox/Yokohama3/negx.png", "./skybox/Yokohama3/posx.png", "./skybox/Yokohama3/posy.png", "./skybox/Yokohama3/negy.png", "./skybox/Yokohama3/posz.png", "./skybox/Yokohama3/negz.png"),
     ),
     config: (
         reflection_spp: 3,
@@ -31,6 +31,34 @@
         skybox: true,
     ),
     shapes: [
+        Sphere((
+            origin: (
+                x: -50,
+                y: 150,
+                z: 100,
+            ),
+            radius: 100,
+            material: (
+                texture: Texture(
+                    handle: "./textures/checker.png",
+                    scaling: (
+                        x: 1,
+                        y: 1,
+                    ),
+                ),
+                c_diffuse: 0.30000001192092896,
+                c_ambient: 0,
+                reflectivity: (
+                    amount: 0.699999988079071,
+                    blurriness: 0.2,
+                ),
+                transparency: (
+                    index_of_refraction: 1,
+                    blurriness: 0,
+                    amount: 0,
+                ),
+            ),
+        )),
         Plane((
             origin: (
                 x: 0,
@@ -44,163 +72,17 @@
             ),
             material: (
                 texture: Texture(
-                    handle: (0),
+                    handle: "./textures/checker.png",
                     scaling: (
                         x: 1000,
                         y: 1000,
                     ),
                 ),
-                c_diffuse: 0.3,
+                c_diffuse: 0.30000001192092896,
                 c_ambient: 0,
                 reflectivity: (
-                    amount: 0.7,
+                    amount: 0.699999988079071,
                     blurriness: 0.5,
-                ),
-                transparency: (
-                    index_of_refraction: 1,
-                    blurriness: 0,
-                    amount: 0,
-                ),
-            ),
-        )),
-        Plane((
-            origin: (
-                x: -200,
-                y: 0,
-                z: 100,
-            ),
-            normal: (
-                x: 1,
-                y: 0,
-                z: 0,
-            ),
-            material: (
-                texture: Color((
-                    x: 175,
-                    y: 0,
-                    z: 0,
-                )),
-                c_diffuse: 1,
-                c_ambient: 0,
-                reflectivity: (
-                    amount: 0,
-                    blurriness: 0,
-                ),
-                transparency: (
-                    index_of_refraction: 1,
-                    blurriness: 0,
-                    amount: 0,
-                ),
-            ),
-        )),
-        Plane((
-            origin: (
-                x: 0,
-                y: 0,
-                z: 100,
-            ),
-            normal: (
-                x: 0,
-                y: 0,
-                z: -1,
-            ),
-            material: (
-                texture: Color((
-                    x: 255,
-                    y: 255,
-                    z: 255,
-                )),
-                c_diffuse: 1,
-                c_ambient: 0,
-                reflectivity: (
-                    amount: 0,
-                    blurriness: 0,
-                ),
-                transparency: (
-                    index_of_refraction: 1,
-                    blurriness: 0,
-                    amount: 0,
-                ),
-            ),
-        )),
-        Plane((
-            origin: (
-                x: 0,
-                y: 400,
-                z: 100,
-            ),
-            normal: (
-                x: 0,
-                y: -1,
-                z: 0,
-            ),
-            material: (
-                texture: Color((
-                    x: 255,
-                    y: 255,
-                    z: 255,
-                )),
-                c_diffuse: 1,
-                c_ambient: 0,
-                reflectivity: (
-                    amount: 0,
-                    blurriness: 0,
-                ),
-                transparency: (
-                    index_of_refraction: 1,
-                    blurriness: 0,
-                    amount: 0,
-                ),
-            ),
-        )),
-        Plane((
-            origin: (
-                x: 200,
-                y: 0,
-                z: 100,
-            ),
-            normal: (
-                x: -1,
-                y: 0,
-                z: 0,
-            ),
-            material: (
-                texture: Color((
-                    x: 0,
-                    y: 175,
-                    z: 0,
-                )),
-                c_diffuse: 1,
-                c_ambient: 0,
-                reflectivity: (
-                    amount: 0,
-                    blurriness: 0,
-                ),
-                transparency: (
-                    index_of_refraction: 1,
-                    blurriness: 0,
-                    amount: 0,
-                ),
-            ),
-        )),
-        Sphere((
-            origin: (
-                x: 50,
-                y: 125,
-                z: 0,
-            ),
-            radius: 25,
-            material: (
-                texture: Color((
-                    x: 255,
-                    y: 255,
-                    z: 255,
-                )),
-                c_diffuse: 0.3,
-                c_ambient: 0,
-                reflectivity: (
-                    amount: 0.7,
-                    blurriness: 0.14,
                 ),
                 transparency: (
                     index_of_refraction: 1,
@@ -215,18 +97,6 @@
             origin: (
                 x: -50,
                 y: 350,
-                z: 50,
-            ),
-            color: (
-                x: 255,
-                y: 255,
-                z: 255,
-            ),
-        )),
-        Point((
-            origin: (
-                x: 50,
-                y: 100,
                 z: 50,
             ),
             color: (

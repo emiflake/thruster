@@ -59,6 +59,7 @@ impl RenderConfig {
                 ui.slider_int(im_str!("Recursion depth"), &mut self.recursion_depth, 1, 15)
                     .build();
                 ui.checkbox(im_str!("Dither"), &mut self.dither);
+                ui.checkbox(im_str!("Denoise"), &mut self.denoise);
                 ui.checkbox(im_str!("Reflections"), &mut self.reflections);
                 ui.checkbox(im_str!("Refractions"), &mut self.refractions);
                 ui.checkbox(im_str!("Shadows"), &mut self.shadows);

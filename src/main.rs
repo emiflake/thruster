@@ -49,31 +49,8 @@ mod skybox;
 mod support;
 mod texture_map;
 
-use crate::skybox::Skybox;
-
 pub fn main() -> std::result::Result<(), String> {
-    let mut texture_map = texture_map::TextureMap::new();
-
-    let checker_handle = texture_map.load_image_from_file("./textures/checker.png")?;
-    let wood_handle = texture_map.load_image_from_file("./textures/wood.png")?;
-    let earth_handle = texture_map.load_image_from_file("./textures/earth.png")?;
-
-    let skybox = Skybox::new([
-        texture_map.load_image_from_file("./skybox/miramar/miramar_bk.png")?,
-        texture_map.load_image_from_file("./skybox/miramar/miramar_ft.png")?,
-        texture_map.load_image_from_file("./skybox/miramar/miramar_up.png")?,
-        texture_map.load_image_from_file("./skybox/miramar/miramar_dn.png")?,
-        texture_map.load_image_from_file("./skybox/miramar/miramar_rt.png")?,
-        texture_map.load_image_from_file("./skybox/miramar/miramar_lf.png")?,
-    ]);
-    //let skybox = Skybox::new([
-    //texture_map.load_image_from_file("./skybox/Yokohama3/negx.png")?,
-    //texture_map.load_image_from_file("./skybox/Yokohama3/posx.png")?,
-    //texture_map.load_image_from_file("./skybox/Yokohama3/posy.png")?,
-    //texture_map.load_image_from_file("./skybox/Yokohama3/negy.png")?,
-    //texture_map.load_image_from_file("./skybox/Yokohama3/posz.png")?,
-    //texture_map.load_image_from_file("./skybox/Yokohama3/negz.png")?,
-    //]);
+    let texture_map = texture_map::TextureMap::new();
 
     let scn_str =
         std::fs::read_to_string("cfg.ron").expect("Could not read configuration file 'cfg.ron'");

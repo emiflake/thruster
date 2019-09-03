@@ -1,6 +1,7 @@
 use crate::key_state::Keystate;
 use crate::profiler::Profiler;
 use crate::scene::Scene;
+use crate::shape::SceneObject;
 use crate::support;
 use crate::texture_map::TextureMap;
 
@@ -9,6 +10,8 @@ use glium::Surface;
 use imgui::Context;
 use imgui::*;
 use imgui_winit_support::{HiDpiMode, WinitPlatform};
+use std::fs::OpenOptions;
+use std::io::Write;
 
 use crate::algebra::Vec3;
 
@@ -22,7 +25,8 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(scene: Scene, texture_map: TextureMap) -> App {
+    pub fn new(scene: Scene, mut texture_map: TextureMap) -> App {
+        texture_map.preload_all_in_scene(&scene);
         Self { scene, texture_map }
     }
 
@@ -84,6 +88,35 @@ impl App {
             profiler.draw_ui(delta_time, &mut ui);
 
             self.scene.config.draw_ui(&mut ui);
+
+            //imgui::Window::new(&ui, im_str!("Object Viewer"))
+            //.size([350.0, 650.0], Condition::FirstUseEver)
+            //.position([800.0, 50.0], Condition::FirstUseEver)
+            //.scroll_bar(true)
+            //.build(|| {
+            //if imgui::Ui::button(&ui, im_str!("Save"), [100.0, 25.0]) {
+            //let ron_str = ron::ser::to_string_pretty(
+            //&self.scene,
+            //ron::ser::PrettyConfig::default(),
+            //)
+            //.expect("Could not generate RON");
+            //let mut f = std::fs::OpenOptions::new()
+            //.write(true)
+            //.create(true)
+            //.open("./cfg.ron")
+            //.unwrap();
+            //f.write_all(ron_str.as_bytes())
+            //.expect("Could not save 'cfg.ron'");
+            //}
+            //ui.separator();
+
+            //for (i, sceneobject) in self.scene.shapes.iter_mut().enumerate() {
+            //ui.push_id(imgui::ImId::Int(i as i32));
+            //sceneobject.draw_ui(&ui);
+            //sceneobject.mat_mut().draw_ui(&ui);
+            //ui.pop_id();
+            //}
+            //});
 
             imgui::Window::new(&ui, im_str!("Screenshot"))
                 .size([300.0, 150.0], Condition::FirstUseEver)
@@ -193,10 +226,10 @@ pub fn handle_keys(keystate: &Keystate, scene: &mut Scene, dt: f64) {
     if keystate.is_key_down(glutin::VirtualKeyCode::Q) {
         scene.camera.translate(Vec3::new(0.0, -speed, 0.0));
     }
-    if keystate.is_key_down(glutin::VirtualKeyCode::Left) {
-        scene.camera.rotate(Vec3::new(0.0, -0.05, 0.0));
-    }
-    if keystate.is_key_down(glutin::VirtualKeyCode::Right) {
-        scene.camera.rotate(Vec3::new(0.0, 0.05, 0.0));
-    }
+    //if keystate.is_key_down(glutin::VirtualKeyCode::Left) {
+    //scene.camera.rotate(Vec3::new(0.0, -0.05, 0.0));
+    //}
+    //if keystate.is_key_down(glutin::VirtualKeyCode::Right) {
+    //scene.camera.rotate(Vec3::new(0.0, 0.05, 0.0));
+    //}
 }

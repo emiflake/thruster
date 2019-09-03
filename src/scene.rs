@@ -15,6 +15,7 @@ use std::time::SystemTime;
 use crate::algebra::Vec3;
 use crate::bvh::BVHTree;
 use crate::camera::{Camera, PerspectiveCamera};
+use crate::dither;
 use crate::image::{ImageBuffer, Rgba};
 use crate::lightsource::Lightsource;
 use crate::render_config::RenderConfig;
@@ -171,6 +172,14 @@ impl RenderData<'_> {
 
         if self.config.denoise {
             denoiser.denoise(buf);
+        }
+
+        if self.config.dither {
+            let ditherer = dither::Dither {
+                palette: dither::ColorPalette::vga_palette(),
+            };
+
+            ditherer.dither_image(buf);
         }
     }
 }

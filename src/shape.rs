@@ -19,7 +19,7 @@ use rand::prelude::*;
 
 use serde_derive::{Deserialize, Serialize};
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Shape {
     Sphere(Sphere),
     Plane(Plane),
@@ -32,6 +32,14 @@ impl SceneObject for Shape {
             Self::Sphere(s) => s.mat(),
             Self::Plane(s) => s.mat(),
             Self::Triangle(s) => s.mat(),
+        }
+    }
+
+    fn mat_mut(&mut self) -> &mut Material {
+        match self {
+            Self::Sphere(s) => s.mat_mut(),
+            Self::Plane(s) => s.mat_mut(),
+            Self::Triangle(s) => s.mat_mut(),
         }
     }
 
@@ -50,9 +58,17 @@ impl SceneObject for Shape {
             Self::Triangle(s) => s.bounding_box(),
         }
     }
+
+    fn draw_ui(&mut self, ui: &imgui::Ui) {
+        match self {
+            Self::Sphere(s) => s.draw_ui(ui),
+            Self::Plane(s) => s.draw_ui(ui),
+            Self::Triangle(s) => s.draw_ui(ui),
+        }
+    }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Ray {
     pub origin: Vec3,
     pub direction: Vec3,
@@ -78,7 +94,7 @@ impl Ray {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Intersection {
     pub t: f64,
     pub normal: Vec3,
@@ -86,7 +102,7 @@ pub struct Intersection {
     pub text_pos: Vec2,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BoundingBox {
     pub min_vector: Vec3,
     pub max_vector: Vec3,
@@ -151,11 +167,14 @@ impl BoundingBox {
 
 use crate::material::Material;
 pub trait SceneObject {
+    fn mat_mut(&mut self) -> &mut Material;
     fn mat(&self) -> &Material;
     /* Whether or not object intersects with the ray */
     fn do_intersect(&self, ray: &Ray) -> Option<Intersection>;
 
     fn bounding_box(&self) -> BoundingBox;
+
+    fn draw_ui(&mut self, ui: &imgui::Ui);
 }
 
 impl Ray {
@@ -179,19 +198,27 @@ impl Ray {
                 closest = intersection;
             }
         }
-        let inter = closest.0;
+        let inter = &closest.0;
         let mat = closest.1.mat();
         let orig_color = match &mat.texture {
             MatTex::Color(col) => *col,
             MatTex::Texture { handle, scaling } => {
-                let text = scene.texture_map.get_image_by_handle(*handle).unwrap();
+                if scene.config.textures {
+                    let text = scene
+                        .texture_map
+                        .get_image_by_handle(handle.clone())
+                        .unwrap();
 
-                let pixel = text.get_pixel(
-                    (inter.text_pos.x * f64::from(text.width()) / scaling.x) as u32 % text.width(),
-                    (inter.text_pos.y * f64::from(text.height()) / scaling.y) as u32
-                        % text.height(),
-                );
-                Vec3::from_rgb(*pixel)
+                    let pixel = text.get_pixel(
+                        (inter.text_pos.x * f64::from(text.width()) / scaling.x) as u32
+                            % text.width(),
+                        (inter.text_pos.y * f64::from(text.height()) / scaling.y) as u32
+                            % text.height(),
+                    );
+                    Vec3::from_rgb(*pixel)
+                } else {
+                    Vec3::new(127.0, 127.0, 127.0)
+                }
             }
         };
         let mut diff_color = Vec3::ORIGIN;
@@ -296,7 +323,7 @@ impl Ray {
     }
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Sphere {
     pub origin: Vec3,
     pub radius: f64,
@@ -307,6 +334,10 @@ pub struct Sphere {
 impl SceneObject for Sphere {
     fn mat(&self) -> &Material {
         &self.material
+    }
+
+    fn mat_mut(&mut self) -> &mut Material {
+        &mut self.material
     }
 
     fn do_intersect(&self, ray: &Ray) -> Option<Intersection> {
@@ -355,9 +386,28 @@ impl SceneObject for Sphere {
             max_vector: self.origin + Vec3::new(1.0, 1.0, 1.0) * self.radius,
         }
     }
+
+    fn draw_ui(&mut self, ui: &imgui::Ui) {
+        let mut xyz = [
+            self.origin.x as f32,
+            self.origin.y as f32,
+            self.origin.z as f32,
+        ];
+        let mut radius = self.radius as f32;
+        ui.text("Sphere");
+        ui.separator();
+        ui.input_float3(im_str!("Sphere Position"), &mut xyz)
+            .build();
+        ui.input_float(im_str!("Sphere Radius"), &mut radius)
+            .build();
+        self.origin.x = f64::from(xyz[0]);
+        self.origin.y = f64::from(xyz[1]);
+        self.origin.z = f64::from(xyz[2]);
+        self.radius = f64::from(radius);
+    }
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Plane {
     pub origin: Vec3,
     pub normal: Vec3,
@@ -368,6 +418,10 @@ pub struct Plane {
 impl SceneObject for Plane {
     fn mat(&self) -> &Material {
         &self.material
+    }
+
+    fn mat_mut(&mut self) -> &mut Material {
+        &mut self.material
     }
 
     fn do_intersect(&self, ray: &Ray) -> Option<Intersection> {
@@ -394,10 +448,33 @@ impl SceneObject for Plane {
             max_vector: self.origin + far - self.normal * far,
         }
     }
+
+    fn draw_ui(&mut self, ui: &imgui::Ui) {
+        ui.text("Plane");
+        ui.separator();
+        let mut p = [
+            self.origin.x as f32,
+            self.origin.y as f32,
+            self.origin.z as f32,
+        ];
+        let mut n = [
+            self.normal.x as f32,
+            self.normal.y as f32,
+            self.normal.z as f32,
+        ];
+        ui.input_float3(im_str!("Plane Position"), &mut p).build();
+        ui.input_float3(im_str!("Plane Normal"), &mut n).build();
+        self.origin.x = f64::from(p[0]);
+        self.origin.y = f64::from(p[1]);
+        self.origin.z = f64::from(p[2]);
+        self.normal.x = f64::from(n[0]);
+        self.normal.y = f64::from(n[1]);
+        self.normal.z = f64::from(n[2]);
+    }
 }
 
 #[allow(dead_code)]
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Triangle {
     pub a: Vertex,
     pub b: Vertex,
@@ -409,6 +486,10 @@ pub struct Triangle {
 impl SceneObject for Triangle {
     fn mat(&self) -> &Material {
         &self.material
+    }
+
+    fn mat_mut(&mut self) -> &mut Material {
+        &mut self.material
     }
 
     fn do_intersect(&self, ray: &Ray) -> Option<Intersection> {
@@ -459,5 +540,9 @@ impl SceneObject for Triangle {
             min_vector: self.a.origin.min(self.b.origin).min(self.c.origin),
             max_vector: self.a.origin.max(self.b.origin).max(self.c.origin),
         }
+    }
+
+    fn draw_ui(&mut self, ui: &imgui::Ui) {
+        ui.text("Triangle");
     }
 }

@@ -12,22 +12,17 @@
 
 use crate::algebra::{Vec2, Vec3};
 use crate::scene::RenderData;
-use crate::texture_map::TextureHandle;
 
 use serde_derive::{Deserialize, Serialize};
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Skybox {
     /* +x, -x, +y, -y, +z, -z */
-    pub handles: [TextureHandle; 6],
+    pub handles: [String; 6],
 }
 
 impl Skybox {
-    pub fn new(handles: [TextureHandle; 6]) -> Self {
-        Self { handles }
-    }
-
-    pub fn get_uv(&self, v: Vec3) -> Option<(TextureHandle, Vec2)> {
+    pub fn get_uv(&self, v: Vec3) -> Option<(String, Vec2)> {
         let abs = v.map_all(&|n| n.abs());
 
         let is_positive_x = v.x > 0.0;
@@ -39,17 +34,35 @@ impl Skybox {
         }
 
         if is_positive_x && abs.x >= abs.y && abs.x >= abs.z {
-            Some((self.handles[0], convert_to_uv(Vec2::new(-v.z, v.y), abs.x)))
+            Some((
+                self.handles[0].clone(),
+                convert_to_uv(Vec2::new(-v.z, v.y), abs.x),
+            ))
         } else if !is_positive_x && abs.x >= abs.y && abs.x >= abs.z {
-            Some((self.handles[1], convert_to_uv(Vec2::new(v.z, v.y), abs.x)))
+            Some((
+                self.handles[1].clone(),
+                convert_to_uv(Vec2::new(v.z, v.y), abs.x),
+            ))
         } else if is_positive_y && abs.y >= abs.x && abs.y >= abs.z {
-            Some((self.handles[2], convert_to_uv(Vec2::new(v.x, -v.z), abs.y)))
+            Some((
+                self.handles[2].clone(),
+                convert_to_uv(Vec2::new(v.x, -v.z), abs.y),
+            ))
         } else if !is_positive_y && abs.y >= abs.x && abs.y >= abs.z {
-            Some((self.handles[3], convert_to_uv(Vec2::new(v.x, v.z), abs.y)))
+            Some((
+                self.handles[3].clone(),
+                convert_to_uv(Vec2::new(v.x, v.z), abs.y),
+            ))
         } else if is_positive_z && abs.z >= abs.y && abs.z >= abs.x {
-            Some((self.handles[4], convert_to_uv(Vec2::new(v.x, v.y), abs.z)))
+            Some((
+                self.handles[4].clone(),
+                convert_to_uv(Vec2::new(v.x, v.y), abs.z),
+            ))
         } else if !is_positive_z && abs.z >= abs.y && abs.z >= abs.x {
-            Some((self.handles[5], convert_to_uv(Vec2::new(-v.x, v.y), abs.z)))
+            Some((
+                self.handles[5].clone(),
+                convert_to_uv(Vec2::new(-v.x, v.y), abs.z),
+            ))
         } else {
             None
         }
