@@ -10,7 +10,7 @@ pub struct BVHTree {
 }
 
 impl BVHTree {
-    pub fn construct_rec(mut shapes: Vec<Shape>, dimension: i32) -> Option<Self> {
+    pub fn construct_rec(mut shapes: Vec<Shape>, dimension: u32) -> Option<Self> {
         if shapes.len() == 0 {
             None
         } else if shapes.len() == 1 {

@@ -18,7 +18,6 @@ use crate::camera::{Camera, PerspectiveCamera};
 use crate::image::{ImageBuffer, Rgba};
 use crate::lightsource::Lightsource;
 use crate::render_config::RenderConfig;
-use crate::shape::Shape;
 use crate::skybox::Skybox;
 use crate::texture_map::TextureMap;
 

@@ -192,7 +192,7 @@ impl Vec3 {
         }
     }
 
-    pub fn dim(self, dimension: i32) -> f64 {
+    pub fn dim(self, dimension: u32) -> f64 {
         match dimension % 3 {
             0 => self.x,
             1 => self.y,
@@ -234,4 +234,115 @@ impl Vertex {
             uv: Vec2::new(vertex.uv.x, vertex.uv.y),
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn vector_maths() {
+        assert_eq!(
+            Vec3::new(0.0, 5.0, 1.0) + Vec3::new(1.0, 0.0, 5.0),
+            Vec3::new(1.0, 5.0, 6.0)
+        );
+
+        assert_eq!(
+            Vec3::new(0.0, 5.0, 1.0) - Vec3::new(1.0, 0.0, 5.0),
+            Vec3::new(-1.0, 5.0, -4.0)
+        );
+
+        assert_eq!(Vec3::new(0.5, 2.5, 0.0) * 2.0, Vec3::new(1.0, 5.0, 0.0));
+
+        assert_eq!(5.0 * Vec3::new(1.0, 2.0, 3.0), Vec3::new(5.0, 10.0, 15.0));
+    }
+
+    #[test]
+    fn dot_product() {
+        assert_eq!(Vec3::new(1.0, 5.0, 3.0).dot(&Vec3::new(2.0, 0.0, 0.0)), 2.0);
+        assert_eq!(Vec3::new(0.0, 1.0, 0.0).dot(&Vec3::new(0.0, 1.0, 0.0)), 1.0);
+        assert_eq!(Vec3::new(0.0, 0.0, 1.0).dot(&Vec3::new(0.0, 1.0, 0.0)), 0.0);
+        assert_eq!(
+            Vec3::new(0.0, -1.0, 0.0).dot(&Vec3::new(0.0, 1.0, 0.0)),
+            -1.0
+        );
+    }
+
+    #[test]
+    fn length2() {
+        assert_eq!(Vec3::new(0.0, 0.0, 0.0).length2(), 0.0);
+        assert_eq!(Vec3::new(5.0, 3.0, 0.0).length2(), 25.0 + 9.0);
+        assert_eq!(Vec3::new(5.0, 9.0, 1.0).length2(), 107.0);
+    }
+
+    #[test]
+    fn length() {
+        assert_eq!(Vec3::new(0.0, 0.0, 0.0).length(), 0.0);
+        assert!((Vec3::new(5.0, 9.0, 1.0).length() - 10.3441).abs() <= 0.0001);
+    }
+
+    #[test]
+    fn clamp_as_color() {
+        assert_eq!(Vec3::ORIGIN.clamp_as_color(), Vec3::ORIGIN);
+        assert_eq!(
+            Vec3::new(5.0, 5.0, 5.0).clamp_as_color(),
+            Vec3::new(5.0, 5.0, 5.0)
+        );
+        assert_eq!(
+            Vec3::new(256.0, 0.0, 0.0).clamp_as_color(),
+            Vec3::new(255.0, 0.0, 0.0)
+        );
+        assert_eq!(
+            Vec3::new(255.1, 0.0, 0.0).clamp_as_color(),
+            Vec3::new(255.0, 0.0, 0.0)
+        );
+        assert_eq!(
+            Vec3::new(-1.0, 0.0, 0.0).clamp_as_color(),
+            Vec3::new(0.0, 0.0, 0.0)
+        );
+    }
+
+    #[test]
+    fn normalized() {
+        assert_eq!(
+            Vec3::new(1.0, 0.0, 0.0).normalized(),
+            Vec3::new(1.0, 0.0, 0.0)
+        );
+        assert!(
+            (Vec3::new(1.0, 1.0, 0.0).normalized()
+                - Vec3::new(2f64.sqrt() / 2.0, 2f64.sqrt() / 2.0, 0.0))
+            .length()
+                <= 0.0001
+        );
+
+        assert!(
+            (Vec3::new(5.0, 94.0, 1.4).normalized().length2()
+                - Vec3::new(5.0, 94.0, 1.4).length2())
+                <= 0.0001
+        );
+    }
+
+    #[test]
+    fn min_max() {
+        let a = Vec3::new(0.0, 1.0, 2.0);
+        let b = Vec3::new(5.0, 2.0, 1.0);
+        let c = Vec3::ORIGIN;
+
+        assert_eq!(a.min(b), Vec3::new(0.0, 1.0, 1.0));
+        assert_eq!(b.min(c), c);
+        assert_eq!(a.max(c), a);
+        assert_eq!(a.max(b), Vec3::new(5.0, 2.0, 2.0));
+    }
+
+    #[test]
+    fn dim() {
+        let a = Vec3::new(3.0, 2.0, 1.0);
+
+        assert_eq!(a.dim(0), 3.0);
+        assert_eq!(a.dim(1), 2.0);
+        assert_eq!(a.dim(2), 1.0);
+        assert_eq!(a.dim(3), 3.0);
+        assert_eq!(a.dim(30), 3.0);
+        assert_eq!(a.dim(300), 3.0);
+    }
+
 }
