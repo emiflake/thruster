@@ -226,10 +226,10 @@ pub fn handle_keys(keystate: &Keystate, scene: &mut Scene, dt: f64) {
     if keystate.is_key_down(glutin::VirtualKeyCode::Q) {
         scene.camera.translate(Vec3::new(0.0, -speed, 0.0));
     }
-    //if keystate.is_key_down(glutin::VirtualKeyCode::Left) {
-    //scene.camera.rotate(Vec3::new(0.0, -0.05, 0.0));
-    //}
-    //if keystate.is_key_down(glutin::VirtualKeyCode::Right) {
-    //scene.camera.rotate(Vec3::new(0.0, 0.05, 0.0));
-    //}
+    if keystate.is_key_down(glutin::VirtualKeyCode::Left) {
+        scene.camera.rotate(Vec3::new(0.0, -0.05, 0.0));
+    }
+    if keystate.is_key_down(glutin::VirtualKeyCode::Right) {
+        scene.camera.rotate(Vec3::new(0.0, 0.05, 0.0));
+    }
 }

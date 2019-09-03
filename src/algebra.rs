@@ -201,6 +201,36 @@ impl Vec3 {
             _ => self.x,
         }
     }
+
+    pub fn flip(self, dimension: u32) -> Self {
+        match dimension % 3 {
+            0 => Vec3::new(-self.x, self.y, self.z),
+            1 => Vec3::new(self.x, -self.y, self.z),
+            2 => Vec3::new(self.x, self.y, -self.z),
+            _ => Vec3::new(-self.x, self.y, self.z),
+        }
+    }
+
+    pub fn rotate_around(self, axis: u32, theta: f64) -> Self {
+        match axis % 3 {
+            0 => Vec3::new(
+                self.x,
+                self.y * theta.cos() - self.z * theta.sin(),
+                self.y * theta.sin() + self.z * theta.cos(),
+            ),
+            1 => Vec3::new(
+                self.x * theta.cos() + self.z * theta.sin(),
+                self.y,
+                -self.x * theta.sin() + self.z * theta.cos(),
+            ),
+            2 => Vec3::new(
+                self.x * theta.cos() - self.y * theta.sin(),
+                self.y * theta.sin() + self.y * theta.cos(),
+                self.z,
+            ),
+            _ => self.rotate_around(0, theta),
+        }
+    }
 }
 
 impl Clampable for Vec3 {
@@ -225,15 +255,6 @@ impl Vertex {
     #[allow(dead_code)]
     pub fn new(origin: Vec3, normal: Vec3, uv: Vec2) -> Self {
         Self { origin, normal, uv }
-    }
-
-    #[allow(dead_code)]
-    pub fn from_parsed(vertex: &parser::Vertex3) -> Self {
-        Self {
-            origin: Vec3::new(vertex.pos.x, vertex.pos.y, vertex.pos.z),
-            normal: Vec3::new(vertex.normal.x, vertex.normal.y, vertex.normal.z),
-            uv: Vec2::new(vertex.uv.x, vertex.uv.y),
-        }
     }
 }
 

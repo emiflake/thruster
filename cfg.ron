@@ -13,7 +13,14 @@
         fov: 60,
     ),
     skybox: (
-        handles: ("./skybox/Yokohama3/negx.png", "./skybox/Yokohama3/posx.png", "./skybox/Yokohama3/posy.png", "./skybox/Yokohama3/negy.png", "./skybox/Yokohama3/posz.png", "./skybox/Yokohama3/negz.png"),
+        handles: (
+	    "./skybox/miramar/miramar_bk.png",
+	    "./skybox/miramar/miramar_ft.png",
+	    "./skybox/miramar/miramar_up.png",
+	    "./skybox/miramar/miramar_dn.png",
+	    "./skybox/miramar/miramar_rt.png",
+	    "./skybox/miramar/miramar_lf.png",
+        ),
     ),
     config: (
         reflection_spp: 3,
@@ -31,38 +38,10 @@
         skybox: true,
     ),
     shapes: [
-        Sphere((
-            origin: (
-                x: -50,
-                y: 150,
-                z: 100,
-            ),
-            radius: 100,
-            material: (
-                texture: Texture(
-                    handle: "./textures/checker.png",
-                    scaling: (
-                        x: 1,
-                        y: 1,
-                    ),
-                ),
-                c_diffuse: 0.30000001192092896,
-                c_ambient: 0,
-                reflectivity: (
-                    amount: 0.699999988079071,
-                    blurriness: 0.2,
-                ),
-                transparency: (
-                    index_of_refraction: 1,
-                    blurriness: 0,
-                    amount: 0,
-                ),
-            ),
-        )),
         Plane((
             origin: (
                 x: 0,
-                y: 0,
+                y: -22.5,
                 z: 0,
             ),
             normal: (
@@ -72,17 +51,17 @@
             ),
             material: (
                 texture: Texture(
-                    handle: "./textures/checker.png",
+                    handle: "./textures/wood.png",
                     scaling: (
-                        x: 1000,
-                        y: 1000,
+                        x: 100,
+                        y: 100,
                     ),
                 ),
-                c_diffuse: 0.30000001192092896,
-                c_ambient: 0,
+                c_diffuse: 0.7,
+                c_ambient: 0.1,
                 reflectivity: (
-                    amount: 0.699999988079071,
-                    blurriness: 0.5,
+                    amount: 0.2,
+                    blurriness: 0.05,
                 ),
                 transparency: (
                     index_of_refraction: 1,
@@ -95,9 +74,9 @@
     lights: [
         Point((
             origin: (
-                x: -50,
-                y: 350,
-                z: 50,
+                x: 0,
+                y: 30,
+                z: -50,
             ),
             color: (
                 x: 255,
