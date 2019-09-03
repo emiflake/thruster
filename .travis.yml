@@ -5,5 +5,10 @@
 language: rust
 
 before_install:
+  - curl -L https://github.com/OpenImageDenoise/oidn/releases/download/v1.0.0/oidn-1.0.0.x86_64.linux.tar.gz -o oidn.tar.gz
+  - tar xvf oidn.tar.gz
+  - echo "export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:./oidn-1.0.0.x86_64.linux/lib\"" >> oidn.env
+  - echo "export OIDN_DIR=\"./oidn-1.0.0.x86_64.linux\"" >> oidn.env
+  - source oidn.env
   - sudo apt-get update -qq
   - sudo apt-get install -qq libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libegl1-mesa-dev libgles2-mesa-dev
