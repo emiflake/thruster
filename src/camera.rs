@@ -11,19 +11,22 @@
 /* ************************************************************************** */
 
 use crate::algebra::Vec3;
-use crate::scene::Scene;
+use crate::scene::RenderData;
 use crate::shape::Ray;
 use rand::prelude::*;
+
+use serde_derive::{Deserialize, Serialize};
 
 pub trait Camera {
     fn project_rays(
         &self,
         screen_pos: (f64, f64),
         screen_dim: (f64, f64),
-        scene: &Scene,
+        scene: &RenderData,
     ) -> Vec<Ray>;
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct PerspectiveCamera {
     pub position: Vec3,
     pub rotation: Vec3,
@@ -55,7 +58,12 @@ impl PerspectiveCamera {
 const DISTRIB_CAMERA: bool = false;
 
 impl Camera for PerspectiveCamera {
-    fn project_rays(&self, (sx, sy): (f64, f64), (w, h): (f64, f64), scene: &Scene) -> Vec<Ray> {
+    fn project_rays(
+        &self,
+        (sx, sy): (f64, f64),
+        (w, h): (f64, f64),
+        scene: &RenderData,
+    ) -> Vec<Ray> {
         if DISTRIB_CAMERA && scene.config.distributed_tracing {
             let mut rng = rand::thread_rng();
             let aspect_ratio = w / h;

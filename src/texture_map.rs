@@ -10,12 +10,14 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+use serde_derive::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::BufReader;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct TextureHandle(usize);
 
+#[derive(Debug, Clone)]
 pub struct TextureMap {
     pub textures: Vec<image::RgbImage>,
 }

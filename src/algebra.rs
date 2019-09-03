@@ -1,6 +1,7 @@
 use image::{Pixel, Rgb, Rgba};
+use serde_derive::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Vec2 {
     pub x: f64,
     pub y: f64,
@@ -12,7 +13,7 @@ impl Vec2 {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Vec3 {
     pub x: f64,
     pub y: f64,
@@ -212,7 +213,7 @@ impl Clampable for Vec3 {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Vertex {
     pub origin: Vec3,
     pub normal: Vec3,

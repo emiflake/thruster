@@ -1,3 +1,6 @@
+use serde_derive::{Deserialize, Serialize};
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct RenderConfig {
     pub reflection_spp: i32,
     pub refraction_spp: i32,

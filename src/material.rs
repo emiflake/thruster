@@ -13,9 +13,10 @@
 use crate::algebra::{Vec2, Vec3};
 
 use crate::texture_map::TextureHandle;
+use serde_derive::{Deserialize, Serialize};
 
 #[allow(dead_code)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum MatTex {
     Color(Vec3),
     Texture {
@@ -23,7 +24,6 @@ pub enum MatTex {
         scaling: Vec2,
     },
 }
-
 impl MatTex {
     #[allow(dead_code)]
     pub fn from_color<'a>(x: f64, y: f64, z: f64) -> MatTex {
@@ -35,7 +35,7 @@ impl MatTex {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct Transparency {
     pub index_of_refraction: f64,
     pub blurriness: f64,
@@ -56,7 +56,7 @@ impl Transparency {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct Reflectivity {
     pub amount: f64,
     pub blurriness: f64,
@@ -75,7 +75,7 @@ impl Reflectivity {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct Material {
     pub texture: MatTex,
     pub c_diffuse: f64,

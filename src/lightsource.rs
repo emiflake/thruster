@@ -11,23 +11,44 @@
 /* ************************************************************************** */
 
 use crate::algebra::Vec3;
-use crate::scene::Scene;
+use crate::scene::RenderData;
 use crate::shape::{Intersection, Ray};
+use serde_derive::{Deserialize, Serialize};
 
 use rand::prelude::*;
 
-pub trait Lightsource {
-    fn luminosity_at(&self, scene: &Scene, intersection: &Intersection) -> f64;
+pub trait Light {
+    fn luminosity_at(&self, scene: &RenderData, intersection: &Intersection) -> f64;
     fn color(&self) -> Vec3;
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum Lightsource {
+    Point(PointLight),
+}
+
+impl Light for Lightsource {
+    fn luminosity_at(&self, scene: &RenderData, intersection: &Intersection) -> f64 {
+        match self {
+            Self::Point(l) => l.luminosity_at(scene, intersection),
+        }
+    }
+
+    fn color(&self) -> Vec3 {
+        match self {
+            Self::Point(l) => l.color(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct PointLight {
     pub origin: Vec3,
     pub color: Vec3,
 }
 
-impl Lightsource for PointLight {
-    fn luminosity_at(&self, scene: &Scene, intersection: &Intersection) -> f64 {
+impl Light for PointLight {
+    fn luminosity_at(&self, scene: &RenderData, intersection: &Intersection) -> f64 {
         if scene.config.distributed_tracing {
             let mut rng = rand::thread_rng();
             let mut amt = 0.0;

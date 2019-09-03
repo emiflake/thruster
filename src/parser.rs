@@ -1,6 +1,6 @@
+#![allow(dead_code)]
 use std::ops;
 
-#[allow(dead_code)]
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Vec2 {
     pub x: f64,
@@ -8,7 +8,6 @@ pub struct Vec2 {
 }
 
 impl Vec2 {
-    #[allow(dead_code)]
     pub fn new() -> Self {
         Self { x: 0.0, y: 0.0 }
     }
@@ -59,7 +58,6 @@ impl Object {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Vec3 {
     pub x: f64,
@@ -68,14 +66,12 @@ pub struct Vec3 {
 }
 
 impl Vec3 {
-    #[allow(dead_code)]
     pub const ORIGIN: Self = Self {
         x: 0.0,
         y: 0.0,
         z: 0.0,
     };
 
-    #[allow(dead_code)]
     pub fn new(x: f64, y: f64, z: f64) -> Self {
         Self { x, y, z }
     }
@@ -117,7 +113,6 @@ impl ops::Mul<Vec3> for Vec3 {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 pub struct Vertex3 {
     pub pos: Vec3,

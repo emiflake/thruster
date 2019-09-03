@@ -2,6 +2,7 @@ use crate::key_state::Keystate;
 use crate::profiler::Profiler;
 use crate::scene::Scene;
 use crate::support;
+use crate::texture_map::TextureMap;
 
 use glium::Surface;
 
@@ -15,13 +16,14 @@ use std::thread;
 #[allow(unused_imports)]
 use std::time::{Duration, Instant};
 
-pub struct App<'a> {
-    pub scene: Scene<'a>,
+pub struct App {
+    pub scene: Scene,
+    pub texture_map: TextureMap,
 }
 
-impl<'a> App<'a> {
-    pub fn new(scene: Scene<'a>) -> App<'a> {
-        Self { scene }
+impl App {
+    pub fn new(scene: Scene, texture_map: TextureMap) -> App {
+        Self { scene, texture_map }
     }
 
     pub fn run(&mut self) -> Result<(), String> {
@@ -103,6 +105,7 @@ impl<'a> App<'a> {
                                 "screenshot.png",
                                 f64::from(dimensions[0]),
                                 f64::from(dimensions[1]),
+                                &self.texture_map,
                             )
                             .expect("Could not take screenshot");
                         self.scene.config.denoise = before;
@@ -120,7 +123,7 @@ impl<'a> App<'a> {
 
             handle_keys(&keystate, &mut self.scene, delta_time as f64);
 
-            let image = self.scene.new_render(640.0, 360.0);
+            let image = self.scene.new_render(640.0, 360.0, &self.texture_map);
             let image_dimensions = image.dimensions();
             let raw_pixels = image.into_raw();
 

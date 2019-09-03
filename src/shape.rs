@@ -11,14 +11,15 @@
 /* ************************************************************************** */
 
 use crate::algebra::{Vec2, Vec3, Vertex};
+use crate::lightsource::Light;
 use crate::material::MatTex;
-use crate::scene::Scene;
+use crate::scene::RenderData;
 
 use rand::prelude::*;
 
-//pub type Shape<'a> = Box<dyn SceneObject + 'a + Sync>;
+use serde_derive::{Deserialize, Serialize};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum Shape {
     Sphere(Sphere),
     Plane(Plane),
@@ -85,6 +86,7 @@ pub struct Intersection {
     pub text_pos: Vec2,
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct BoundingBox {
     pub min_vector: Vec3,
     pub max_vector: Vec3,
@@ -157,7 +159,7 @@ pub trait SceneObject {
 }
 
 impl Ray {
-    pub fn cast<'a>(&self, scene: &'a Scene) -> Vec<(Intersection, &'a Shape)> {
+    pub fn cast<'a>(&self, scene: &'a RenderData) -> Vec<(Intersection, &'a Shape)> {
         if let Some(is) = scene.bvh.intersect(self) {
             vec![is]
         } else {
@@ -168,7 +170,7 @@ impl Ray {
     pub fn color_function<'a>(
         &self,
         intersections: Vec<(Intersection, &Shape)>,
-        scene: &Scene,
+        scene: &RenderData,
     ) -> Option<Vec3> {
         let mut rng = rand::thread_rng();
         let mut closest = intersections.first()?;
@@ -294,7 +296,7 @@ impl Ray {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct Sphere {
     pub origin: Vec3,
     pub radius: f64,
@@ -355,7 +357,7 @@ impl SceneObject for Sphere {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct Plane {
     pub origin: Vec3,
     pub normal: Vec3,
@@ -395,7 +397,7 @@ impl SceneObject for Plane {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct Triangle {
     pub a: Vertex,
     pub b: Vertex,
