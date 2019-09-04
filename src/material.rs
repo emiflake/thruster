@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        ::::::::            */
-/*   material.rs                                        :+:    :+:            */
-/*                                                     +:+                    */
-/*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
-/*                                                   +#+                      */
-/*   Created: 2019/07/20 19:44:22 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/27 15:06:24 by nmartins      ########   odam.nl         */
-/*                                                                            */
-/* ************************************************************************** */
-
 use crate::algebra::{Vec2, Vec3};
 
 use serde_derive::{Deserialize, Serialize};

@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        ::::::::            */
-/*   lightsource.rs                                     :+:    :+:            */
-/*                                                     +:+                    */
-/*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
-/*                                                   +#+                      */
-/*   Created: 2019/07/20 21:05:24 by nmartins       #+#    #+#                */
-/*   Updated: 2019/07/25 21:43:30 by nmartins      ########   odam.nl         */
-/*                                                                            */
-/* ************************************************************************** */
-
 use crate::algebra::Vec3;
 use crate::scene::RenderData;
 use crate::shape::{Intersection, Ray};

@@ -1,58 +1,12 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        ::::::::            */
-/*   main.rs                                            :+:    :+:            */
-/*                                                     +:+                    */
-/*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
-/*                                                   +#+                      */
-/*   Created: 2019/07/19 18:06:37 by nmartins       #+#    #+#                */
-/*   Updated: 2019/08/10 15:41:04 by nmartins      ########   odam.nl         */
-/*                                                                            */
-/* ************************************************************************** */
-
 #![allow(unused_variables)]
 
-extern crate image;
-extern crate rand;
-extern crate scoped_threadpool;
-
-extern crate glutin;
-#[macro_use]
-extern crate glium;
-
-#[macro_use]
-extern crate imgui;
-extern crate imgui_glium_renderer;
-
-extern crate oidn;
-
-#[macro_use]
-extern crate serde_derive;
-extern crate ron;
-extern crate serde;
-
-mod algebra;
-mod app;
-mod bvh;
-mod camera;
-mod denoise;
-mod dither;
-mod key_state;
-mod lightsource;
-mod material;
-mod parser;
-mod profiler;
-mod render_config;
-mod scene;
-mod shape;
-mod skybox;
-mod support;
-mod texture_map;
-
-use crate::algebra::{Vec2, Vec3, Vertex};
-use crate::material::{MatTex, Material, Reflectivity, Transparency};
-use crate::scene::Scene;
-use crate::shape::{Shape, Triangle};
+use thruster::algebra::{Vec2, Vec3, Vertex};
+use thruster::app;
+use thruster::material::{MatTex, Material, Reflectivity, Transparency};
+use thruster::parser;
+use thruster::scene::Scene;
+use thruster::shape::{Shape, Triangle};
+use thruster::texture_map;
 
 pub fn main() -> std::result::Result<(), String> {
     let texture_map = texture_map::TextureMap::new();

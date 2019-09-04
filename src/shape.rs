@@ -1,18 +1,6 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        ::::::::            */
-/*   shape.rs                                           :+:    :+:            */
-/*                                                     +:+                    */
-/*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
-/*                                                   +#+                      */
-/*   Created: 2019/07/19 18:17:32 by nmartins       #+#    #+#                */
-/*   Updated: 2019/08/05 16:40:25 by nmartins      ########   odam.nl         */
-/*                                                                            */
-/* ************************************************************************** */
-
 use crate::algebra::{Vec2, Vec3, Vertex};
 use crate::lightsource::Light;
-use crate::material::MatTex;
+use crate::material::{MatTex, Material};
 use crate::scene::RenderData;
 
 use rand::prelude::*;
@@ -68,17 +56,26 @@ impl SceneObject for Shape {
     }
 }
 
+/// A Ray that is to be casted, should be created using the `new` function
 #[derive(Debug, Clone, PartialEq)]
 pub struct Ray {
+    /// The position the ray starts from
     pub origin: Vec3,
+
+    /// The direction the ray is cast towards
     pub direction: Vec3,
+
+    /// The maximum recursion level
     pub level: i32,
 
+    /// *Precomputed* value for some uses.
     pub inv_dir: Vec3,
+    /// *Precomputed* value for some uses.
     pub sign: Vec3,
 }
 
 impl Ray {
+    /// The preferred way to create a Ray. This function already precomputes `inv_dir` and `sign`
     pub fn new(origin: Vec3, direction: Vec3, level: i32) -> Self {
         Self {
             origin,
@@ -94,17 +91,32 @@ impl Ray {
     }
 }
 
+/// Represents a found intersection between a Ray and an Object
 #[derive(Debug, Clone, PartialEq)]
 pub struct Intersection {
+    /// The 'distance' the ray hit at. This is derived from ```p = rO + t * rD```
     pub t: f64,
+
+    /// The normal from the shape at the intersection
     pub normal: Vec3,
+
+    /// The position the ray hit the object at
     pub origin: Vec3,
+
+    /// The texture position in UV-space that the ray intersects
     pub text_pos: Vec2,
 }
 
+/// A Bounding Box to represent the maximum range of an object, this is useful for Ray intersection
+/// checking since it will guarantee that any Ray that can intersect the object, will also
+/// intersect with this BoundingBox. Shapes must implement a function that generates this
+/// BoundingBox such that they can in general be optimized with the
+/// [BVHTree](../bvh/struct.BVHTree.html)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BoundingBox {
+    /// The vector containing the low values of the bounding box
     pub min_vector: Vec3,
+    /// The vector containing the high values of the bounding box
     pub max_vector: Vec3,
 }
 
@@ -165,19 +177,26 @@ impl BoundingBox {
     }
 }
 
-use crate::material::Material;
+/// This trait describes what an object must be able to do in order to fit in our scene.
 pub trait SceneObject {
+    /// Get the material ref as a mutable
     fn mat_mut(&mut self) -> &mut Material;
+
+    /// Get the material ref
     fn mat(&self) -> &Material;
-    /* Whether or not object intersects with the ray */
+
+    /// Whether or not object intersects with the ray
     fn do_intersect(&self, ray: &Ray) -> Option<Intersection>;
 
+    /// Calculate the [BoundingBox](struct.BoundingBox.html0
     fn bounding_box(&self) -> BoundingBox;
 
+    /// Draw the UI widget for modifying objects
     fn draw_ui(&mut self, ui: &imgui::Ui);
 }
 
 impl Ray {
+    /// Use the [BVHTree](../bvh/struct.BVHTree.html) to find the nearest intersection
     pub fn cast<'a>(&self, scene: &'a RenderData) -> Vec<(Intersection, &'a Shape)> {
         if let Some(is) = scene.bvh.intersect(self) {
             vec![is]
@@ -186,6 +205,10 @@ impl Ray {
         }
     }
 
+    /// The color function of a Ray, allows it to generate coloring for a Ray trace.
+    ///
+    /// **TODO:** Allow simplify this function in some way, possibly by abstracting, this is
+    /// complicated due to the complex nature of the equation.
     pub fn color_function<'a>(
         &self,
         intersections: Vec<(Intersection, &Shape)>,
@@ -575,8 +598,8 @@ impl SceneObject for Triangle {
 
     fn bounding_box(&self) -> BoundingBox {
         BoundingBox {
-            min_vector: self.a.origin.min(self.b.origin).min(self.c.origin),
-            max_vector: self.a.origin.max(self.b.origin).max(self.c.origin),
+            min_vector: self.a.origin.min(&self.b.origin).min(&self.c.origin),
+            max_vector: self.a.origin.max(&self.b.origin).max(&self.c.origin),
         }
     }
 

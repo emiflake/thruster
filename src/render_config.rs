@@ -25,7 +25,7 @@ impl Default for RenderConfig {
             shadow_spp: 3,
             distributed_tracing: true,
             recursion_depth: 3,
-            denoise: true,
+            denoise: false,
             dither: false,
             multi_thread: true,
 

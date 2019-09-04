@@ -1,7 +1,6 @@
 use crate::key_state::Keystate;
 use crate::profiler::Profiler;
 use crate::scene::Scene;
-use crate::shape::SceneObject;
 use crate::support;
 use crate::texture_map::TextureMap;
 
@@ -10,8 +9,6 @@ use glium::Surface;
 use imgui::Context;
 use imgui::*;
 use imgui_winit_support::{HiDpiMode, WinitPlatform};
-use std::fs::OpenOptions;
-use std::io::Write;
 
 use crate::algebra::Vec3;
 

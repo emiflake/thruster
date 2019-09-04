@@ -24,3 +24,10 @@ oidn = "0.2.0"
 serde = "1.0.99"
 serde_derive = "1.0.99"
 ron = "*"
+
+[dev-dependencies]
+criterion = "0.3.0"
+
+[[bench]]
+name = "rt_perf_bench"
+harness = false

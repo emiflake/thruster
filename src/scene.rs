@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        ::::::::            */
-/*   thruster.rs                                        :+:    :+:            */
-/*                                                     +:+                    */
-/*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
-/*                                                   +#+                      */
-/*   Created: 2019/07/21 17:25:15 by nmartins       #+#    #+#                */
-/*   Updated: 2019/08/12 15:49:43 by nmartins      ########   odam.nl         */
-/*                                                                            */
-/* ************************************************************************** */
-
 use std::time::SystemTime;
 
 use crate::algebra::Vec3;
@@ -48,15 +36,15 @@ pub struct RenderData<'a> {
 }
 
 impl Scene {
-    fn compute_render_data<'a>(self, texture_map: &'a TextureMap) -> RenderData<'a> {
+    fn compute_render_data<'a>(&self, texture_map: &'a TextureMap) -> RenderData<'a> {
         RenderData {
             bvh: BVHTree::construct(&self.shapes)
                 .expect("Could not construct RenderData from Scene"),
-            lights: self.lights,
-            skybox: self.skybox,
+            lights: self.lights.clone(),
+            skybox: self.skybox.clone(),
             texture_map: texture_map,
-            camera: self.camera,
-            config: self.config,
+            camera: self.camera.clone(),
+            config: self.config.clone(),
         }
     }
 
@@ -66,7 +54,7 @@ impl Scene {
         h: f64,
         texture_map: &'a TextureMap,
     ) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
-        let render_data = self.clone().compute_render_data(texture_map);
+        let render_data = self.compute_render_data(texture_map);
 
         render_data.new_render(w, h)
     }
@@ -96,10 +84,6 @@ impl RenderData<'_> {
         let delta = after
             .duration_since(before)
             .expect("Could not get delta time");
-        println!(
-            "Took {}s to render image",
-            delta.as_micros() as f64 / 1_000_000f64
-        );
         Ok(())
     }
 

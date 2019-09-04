@@ -1,16 +1,17 @@
 use crate::shape::{BoundingBox, Intersection, Ray, SceneObject, Shape};
 use std::cmp::Ordering;
-use std::sync::Arc;
 
+/// A Tree that uses a [Shapes](../shape/enum.Shape.html) [BoundingBox](../shape/struct.BoundingBox.html)
+/// to index and find the intersection.
 pub struct BVHTree {
     pub bounding_box: BoundingBox,
-    pub left: Option<Arc<BVHTree>>,
-    pub right: Option<Arc<BVHTree>>,
+    pub left: Option<Box<BVHTree>>,
+    pub right: Option<Box<BVHTree>>,
     pub leaf: Option<Shape>,
 }
 
 impl BVHTree {
-    pub fn construct_rec(mut shapes: Vec<Shape>, dimension: u32) -> Option<Self> {
+    fn construct_rec(mut shapes: Vec<Shape>, dimension: u32) -> Option<Self> {
         if shapes.len() == 0 {
             None
         } else if shapes.len() == 1 {
@@ -29,8 +30,8 @@ impl BVHTree {
                     .fold(None, |acc, b| match acc {
                         None => Some(b),
                         Some(bb) => Some(BoundingBox {
-                            min_vector: bb.min_vector.min(b.min_vector),
-                            max_vector: bb.max_vector.max(b.max_vector),
+                            min_vector: bb.min_vector.min(&b.min_vector),
+                            max_vector: bb.max_vector.max(&b.max_vector),
                         }),
                     });
             shapes.sort_by(|a, b| {
@@ -45,14 +46,14 @@ impl BVHTree {
             // TODO: Implement better algorithm for actually creating the tree.
             let right =
                 match Self::construct_rec(shapes[0..shapes.len() / 2].to_vec(), dimension + 1) {
-                    Some(s) => Some(Arc::new(s)),
+                    Some(s) => Some(Box::new(s)),
                     None => None,
                 };
             let left = match Self::construct_rec(
                 shapes[shapes.len() / 2..shapes.len()].to_vec(),
                 dimension + 1,
             ) {
-                Some(s) => Some(Arc::new(s)),
+                Some(s) => Some(Box::new(s)),
                 None => None,
             };
 
@@ -65,10 +66,13 @@ impl BVHTree {
         }
     }
 
+    /// Construct a BVH tree from a slice of [Shapes](../shape/enum.Shape.html)
     pub fn construct(shapes: &[Shape]) -> Option<Self> {
         Self::construct_rec(shapes.to_vec(), 0)
     }
 
+    /// Find intersection with [Ray](../shape/struct.Ray.html) in the tree
+    /// Used for finding Ray-X intersections in a scene.
     pub fn intersect(&self, ray: &Ray) -> Option<(Intersection, &Shape)> {
         let mut closest = None;
 
@@ -77,7 +81,7 @@ impl BVHTree {
         closest
     }
 
-    pub fn intersect_rec<'a>(&'a self, ray: &Ray, closest: &mut Option<(Intersection, &'a Shape)>) {
+    fn intersect_rec<'a>(&'a self, ray: &Ray, closest: &mut Option<(Intersection, &'a Shape)>) {
         if self.bounding_box.intersects_with(ray) {
             if let Some(leaf_shape) = &self.leaf {
                 if let Some(intersection) = leaf_shape.do_intersect(ray) {

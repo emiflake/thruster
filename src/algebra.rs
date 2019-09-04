@@ -1,6 +1,8 @@
 use image::{Pixel, Rgb, Rgba};
 use serde_derive::{Deserialize, Serialize};
 
+/// A f64 2-dimensional Vector struct
+/// For use with Pixels and sampling
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Vec2 {
     pub x: f64,
@@ -13,6 +15,8 @@ impl Vec2 {
     }
 }
 
+/// A standard f64 3-dimensional Vector struct
+/// For use everywhere
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Vec3 {
     pub x: f64,
@@ -69,7 +73,16 @@ impl std::ops::Neg for Vec3 {
     }
 }
 
-trait Clampable {
+/// Make an object clampable between two instances of itself
+/// # Example:
+/// ```
+/// use thruster::algebra::Clampable;
+/// println!("{}", (5f64).clamp_to(2.0, 10.0));
+/// //=>  2.0
+/// println!("{}", (14f64).clamp_to(2.0, 10.0));
+/// //=> 10.0
+/// ```
+pub trait Clampable {
     fn clamp_to(self, min: Self, max: Self) -> Self;
 }
 
@@ -86,6 +99,7 @@ impl Clampable for f64 {
 }
 
 impl Vec3 {
+    /// The origin Vector (0.0, 0.0, 0.0)
     pub const ORIGIN: Self = Vec3 {
         x: 0.0,
         y: 0.0,
@@ -95,18 +109,26 @@ impl Vec3 {
     pub fn new(x: f64, y: f64, z: f64) -> Self {
         Vec3 { x, y, z }
     }
+
+    /// The square of the magniture/length of the Vector
+    /// x^2 + y^2 + z^2
     pub fn length2(&self) -> f64 {
         self.x * self.x + self.y * self.y + self.z * self.z
     }
 
+    /// The magnitude/length of a Vector
     pub fn length(&self) -> f64 {
         self.length2().sqrt()
     }
 
+    /// The dot product between two Vectors
+    /// Represents the 'difference' in angle.
     pub fn dot(&self, rhs: &Vec3) -> f64 {
         self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
     }
 
+    /// Normalize the Vector towards a unit Vector.
+    /// This is achieved by dividing the Vector's elements by its length
     pub fn normalized(&self) -> Self {
         let mag = self.length();
 
@@ -114,18 +136,22 @@ impl Vec3 {
         *self / mag
     }
 
+    /// The square of the distance between two Vectors
     pub fn distance2(&self, other: &Vec3) -> f64 {
         (self.x - other.x).powf(2.0) + (self.y - other.y).powf(2.0) + (self.z - other.z).powf(2.0)
     }
 
+    /// The distance between two vectors
     pub fn distance(&self, other: &Vec3) -> f64 {
         self.distance2(other).sqrt()
     }
 
+    /// Clamp the Vector's values to [0.0, 255.0]
     pub fn clamp_as_color(&self) -> Self {
         self.clamp_to(Vec3::ORIGIN, Vec3::new(255.0, 255.0, 255.0))
     }
 
+    /// The cross product between two vectors
     pub fn cross_product(&self, other: &Vec3) -> Vec3 {
         Vec3::new(
             self.y * other.z - self.z * other.y,
@@ -134,6 +160,7 @@ impl Vec3 {
         )
     }
 
+    /// Map a function over each of the Vector's values
     pub fn map_all(self, f: &impl Fn(f64) -> f64) -> Self {
         Vec3::new(f(self.x), f(self.y), f(self.z))
     }
@@ -162,7 +189,9 @@ impl Vec3 {
         Rgba([self.x as u8, self.y as u8, self.z as u8, 255])
     }
 
-    // Warning, incomplete, and possibly faulty.
+    /// Rotate a Vector with the angles of another Vector
+    ///
+    /// **Warning, incomplete, and possibly faulty.**
     pub fn rotate(self, theta: Vec3) -> Self {
         let v = Vec3 {
             x: self.x,
@@ -177,7 +206,8 @@ impl Vec3 {
         w
     }
 
-    pub fn min(self, rhs: Self) -> Self {
+    /// Element-wise minimum over two Vectors
+    pub fn min(self, rhs: &Self) -> Self {
         Vec3 {
             x: self.x.min(rhs.x),
             y: self.y.min(rhs.y),
@@ -185,7 +215,8 @@ impl Vec3 {
         }
     }
 
-    pub fn max(self, rhs: Self) -> Self {
+    /// Element-wise maximum over two Vectors
+    pub fn max(self, rhs: &Self) -> Self {
         Vec3 {
             x: self.x.max(rhs.x),
             y: self.y.max(rhs.y),
@@ -193,6 +224,7 @@ impl Vec3 {
         }
     }
 
+    /// Extract a dimension from a Vector by it's number 0-2
     pub fn dim(self, dimension: u32) -> f64 {
         match dimension % 3 {
             0 => self.x,
@@ -202,6 +234,7 @@ impl Vec3 {
         }
     }
 
+    /// Flip a dimension from a Vector by it's number 0-2
     pub fn flip(self, dimension: u32) -> Self {
         match dimension % 3 {
             0 => Vec3::new(-self.x, self.y, self.z),
@@ -211,6 +244,9 @@ impl Vec3 {
         }
     }
 
+    /// Rotate a dimension from a Vector by it's number 0-2
+    /// This function is particularly useful since it's very versatile in conjunction with flipping
+    /// for some transformations
     pub fn rotate_around(self, axis: u32, theta: f64) -> Self {
         match axis % 3 {
             0 => Vec3::new(
@@ -250,7 +286,6 @@ pub struct Vertex {
     pub uv: Vec2,
 }
 
-use crate::parser;
 impl Vertex {
     #[allow(dead_code)]
     pub fn new(origin: Vec3, normal: Vec3, uv: Vec2) -> Self {
@@ -349,10 +384,10 @@ mod tests {
         let b = Vec3::new(5.0, 2.0, 1.0);
         let c = Vec3::ORIGIN;
 
-        assert_eq!(a.min(b), Vec3::new(0.0, 1.0, 1.0));
-        assert_eq!(b.min(c), c);
-        assert_eq!(a.max(c), a);
-        assert_eq!(a.max(b), Vec3::new(5.0, 2.0, 2.0));
+        assert_eq!(a.min(&b), Vec3::new(0.0, 1.0, 1.0));
+        assert_eq!(b.min(&c), c);
+        assert_eq!(a.max(&c), a);
+        assert_eq!(a.max(&b), Vec3::new(5.0, 2.0, 2.0));
     }
 
     #[test]

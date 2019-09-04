@@ -1,62 +1,7 @@
 use crate::algebra::{Vec2, Vec3, Vertex};
-use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
-
-fn str_to_vec3(s: &str) -> Option<Vec3> {
-    let bits: Vec<&str> = s.trim().split(" ").collect();
-    if bits.len() != 3 {
-        None
-    } else {
-        Some(Vec3 {
-            x: bits[0].parse().unwrap(),
-            y: bits[1].parse().unwrap(),
-            z: bits[2].parse().unwrap(),
-        })
-    }
-}
-
-fn str_to_vec2(s: &str) -> Option<Vec2> {
-    let bits: Vec<&str> = s.split(" ").collect();
-    if bits.len() < 2 {
-        None
-    } else {
-        Some(Vec2 {
-            x: bits[0].parse().unwrap(),
-            y: bits[1].parse().unwrap(),
-        })
-    }
-}
-
-type VertexDescription = (usize, usize, usize);
-type TriangleDescription = (VertexDescription, VertexDescription, VertexDescription);
-
-fn str_to_vertex_description(s: &str) -> Option<VertexDescription> {
-    let bits: Vec<&str> = s.split("/").collect();
-    if bits.len() != 3 {
-        None
-    } else {
-        Some((
-            bits[0].parse::<usize>().unwrap() - 1,
-            bits[1].parse::<usize>().unwrap() - 1,
-            bits[2].parse::<usize>().unwrap() - 1,
-        ))
-    }
-}
-
-fn str_to_triangle_description(s: &str) -> Option<TriangleDescription> {
-    let bits: Vec<&str> = s.trim().split(" ").collect();
-    if bits.len() != 3 {
-        None
-    } else {
-        Some((
-            str_to_vertex_description(bits[0]).expect("Failed to parse vertex"),
-            str_to_vertex_description(bits[1]).expect("Failed to parse vertex"),
-            str_to_vertex_description(bits[2]).expect("Failed to parse vertex"),
-        ))
-    }
-}
 
 #[derive(Debug)]
 pub enum ParseError {
@@ -66,6 +11,7 @@ pub enum ParseError {
     MalformedVertex(usize),
 }
 
+/// Just a bunch of triangles, basically.
 pub struct Object {
     pub tris: Vec<(Vertex, Vertex, Vertex)>,
 }
@@ -76,10 +22,12 @@ impl Default for Object {
     }
 }
 
+// TODO: remove
 pub fn str_to_float(s: &str) -> Result<f64, ParseError> {
     s.parse::<f64>().map_err(|_| ParseError::StrParseError)
 }
 
+/// Parses a .obj file into an `Object`.
 pub fn parse(path: String) -> Result<Object, ParseError> {
     let file = File::open(path).map_err(|_| ParseError::FileReadError)?;
     let reader = BufReader::new(file);
