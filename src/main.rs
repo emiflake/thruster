@@ -61,8 +61,7 @@ pub fn main() -> std::result::Result<(), String> {
         std::fs::read_to_string("cfg.ron").expect("Could not read configuration file 'cfg.ron'");
     let mut scene: Scene = ron::de::from_str(&scn_str).expect("Could not parse 'cfg.ron'");
 
-    let obj =
-        parser::parse("./objs/codam-text-high.obj".to_string()).expect("Could not parse .obj");
+    let obj = parser::parse("./objs/codam-text-low.obj".to_string()).expect("Could not parse .obj");
     for (a, b, c) in obj.tris.iter() {
         let a = Vertex {
             origin: a.origin.rotate_around(0, std::f64::consts::FRAC_PI_2)
@@ -104,7 +103,7 @@ pub fn main() -> std::result::Result<(), String> {
         }))
     }
     let obj =
-        parser::parse("./objs/codam-stripes-high.obj".to_string()).expect("Could not parse .obj");
+        parser::parse("./objs/codam-stripes-low.obj".to_string()).expect("Could not parse .obj");
     for (a, b, c) in obj.tris.iter() {
         let a = Vertex {
             origin: a.origin.rotate_around(0, std::f64::consts::FRAC_PI_2),

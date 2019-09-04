@@ -38,6 +38,32 @@
         skybox: true,
     ),
     shapes: [
+	 Sphere((
+            origin: (
+                x: 0,
+                y: 0,
+                z: -35,
+            ),
+            radius: 5,
+            material: (
+                texture: Color((
+                    x: 255,
+                    y: 255,
+                    z: 255,
+                )),
+                c_diffuse: 0,
+                c_ambient: 0,
+                reflectivity: (
+                    amount: 0.0,
+                    blurriness: 0.0,
+                ),
+                transparency: (
+                    index_of_refraction: 1.2,
+                    blurriness: 0.05,
+                    amount: 1.0,
+                ),
+	    )
+	)),
         Plane((
             origin: (
                 x: 0,
