@@ -254,125 +254,97 @@ impl Ray {
             if self.level <= 0 || !mat.transparency.is_transparent() || !scene.config.refractions {
                 Vec3::ORIGIN
             } else {
-                if scene.config.distributed_tracing {
-                    let mut col = Vec3::ORIGIN;
-                    let blurriness = mat.transparency.blurriness;
-                    let spp = if blurriness == 0.0 {
-                        1
-                    } else {
-                        scene.config.refraction_spp
-                    };
-
-                    let ior = mat.transparency.index_of_refraction;
-                    let eta = 2.0 - ior;
-                    let o = self.direction * eta - inter.normal * (-n_dot_d + eta * n_dot_d);
-                    for _ in 0..spp {
-                        let ray = Ray::new(
-                            inter.origin - inter.normal * 0.01,
-                            o.rotate(Vec3::new(
-                                (rng.gen::<f64>() - 0.5) * blurriness,
-                                (rng.gen::<f64>() - 0.5) * blurriness,
-                                (rng.gen::<f64>() - 0.5) * blurriness,
-                            )),
-                            self.level - 1,
-                        );
-                        match ray.color_function(ray.cast(scene), scene) {
-                            Some(color) => col = col + color,
-                            _ => {
-                                if scene.config.skybox {
-                                    col = col
-                                        + scene
-                                            .skybox
-                                            .calc_color(scene, ray.direction)
-                                            .unwrap_or(Vec3::ORIGIN)
-                                }
-                            }
-                        }
-                    }
-                    col / f64::from(spp)
+                let mut col = Vec3::ORIGIN;
+                let (spp, blurriness) = if scene.config.distributed_tracing {
+                    let blurriness = mat.reflectivity.blurriness;
+                    (
+                        if blurriness == 0.0 {
+                            1
+                        } else {
+                            scene.config.reflection_spp
+                        },
+                        blurriness,
+                    )
                 } else {
-                    let ior = mat.transparency.index_of_refraction;
-                    let eta = 2.0 - ior;
-                    let o = self.direction * eta - inter.normal * (-n_dot_d + eta * n_dot_d);
-                    let ray = Ray::new(inter.origin - inter.normal * 0.01, o, self.level - 1);
+                    (1, 0.0)
+                };
+
+                let ior = mat.transparency.index_of_refraction;
+                let eta = 2.0 - ior;
+                let o = self.direction * eta - inter.normal * (-n_dot_d + eta * n_dot_d);
+                for _ in 0..spp {
+                    let ray = Ray::new(
+                        inter.origin - inter.normal * 0.01,
+                        o.rotate(Vec3::new(
+                            (rng.gen::<f64>() - 0.5) * blurriness,
+                            (rng.gen::<f64>() - 0.5) * blurriness,
+                            (rng.gen::<f64>() - 0.5) * blurriness,
+                        )),
+                        self.level - 1,
+                    );
                     match ray.color_function(ray.cast(scene), scene) {
-                        Some(color) => color,
+                        Some(color) => col = col + color,
                         _ => {
                             if scene.config.skybox {
-                                scene
-                                    .skybox
-                                    .calc_color(scene, ray.direction)
-                                    .unwrap_or(Vec3::ORIGIN)
-                            } else {
-                                Vec3::ORIGIN
+                                col = col
+                                    + scene
+                                        .skybox
+                                        .calc_color(scene, ray.direction)
+                                        .unwrap_or(Vec3::ORIGIN)
                             }
                         }
                     }
                 }
+                col / f64::from(spp)
             }
         };
         let refl_color = {
             if self.level == 0 || !mat.reflectivity.is_reflective() || !scene.config.reflections {
                 Vec3::ORIGIN
             } else {
-                if scene.config.distributed_tracing {
-                    let mut col = Vec3::ORIGIN;
+                let mut col = Vec3::ORIGIN;
+                let (spp, blurriness) = if scene.config.distributed_tracing {
                     let blurriness = mat.reflectivity.blurriness;
-                    let spp = if blurriness == 0.0 {
-                        1
-                    } else {
-                        scene.config.reflection_spp
-                    };
-
-                    for _ in 0..spp {
-                        let reflection_dir = self.direction - (n_dot_d * 2.0) * inter.normal;
-                        let ray = Ray::new(
-                            inter.origin + inter.normal * 0.01,
-                            reflection_dir.rotate(Vec3::new(
-                                (rng.gen::<f64>() - 0.5) * blurriness,
-                                (rng.gen::<f64>() - 0.5) * blurriness,
-                                (rng.gen::<f64>() - 0.5) * blurriness,
-                            )),
-                            self.level - 1,
-                        );
-                        col = col
-                            + match ray.color_function(ray.cast(scene), scene) {
-                                Some(color) => color / f64::from(spp),
-                                _ => {
-                                    if scene.config.skybox {
-                                        (scene
-                                            .skybox
-                                            .calc_color(scene, ray.direction)
-                                            .unwrap_or(Vec3::ORIGIN))
-                                            / f64::from(spp)
-                                    } else {
-                                        Vec3::ORIGIN
-                                    }
-                                }
-                            };
-                    }
-                    col
+                    (
+                        if blurriness == 0.0 {
+                            1
+                        } else {
+                            scene.config.reflection_spp
+                        },
+                        blurriness,
+                    )
                 } else {
+                    (1, 0.0)
+                };
+
+                for _ in 0..spp {
                     let reflection_dir = self.direction - (n_dot_d * 2.0) * inter.normal;
                     let ray = Ray::new(
                         inter.origin + inter.normal * 0.01,
-                        reflection_dir,
+                        reflection_dir.rotate(Vec3::new(
+                            (rng.gen::<f64>() - 0.5) * blurriness,
+                            (rng.gen::<f64>() - 0.5) * blurriness,
+                            (rng.gen::<f64>() - 0.5) * blurriness,
+                        )),
                         self.level - 1,
                     );
-                    match ray.color_function(ray.cast(scene), scene) {
-                        Some(color) => color,
-                        _ => {
-                            if scene.config.skybox {
-                                scene
-                                    .skybox
-                                    .calc_color(scene, ray.direction)
-                                    .unwrap_or(Vec3::ORIGIN)
-                            } else {
-                                Vec3::ORIGIN
+                    col = col
+                        + match ray.color_function(ray.cast(scene), scene) {
+                            Some(color) => color / f64::from(spp),
+                            _ => {
+                                if scene.config.skybox {
+                                    (scene
+                                        .skybox
+                                        .calc_color(scene, ray.direction)
+                                        .unwrap_or(Vec3::ORIGIN))
+                                        / f64::from(spp)
+                                } else {
+                                    Vec3::ORIGIN
+                                }
                             }
-                        }
-                    }
+                        };
                 }
+                col
             }
         };
         Some(
@@ -502,7 +474,7 @@ impl SceneObject for Plane {
     }
 
     fn bounding_box(&self) -> BoundingBox {
-        let far = Vec3::new(1000.0, 1000.0, 1000.0);
+        let far = Vec3::new(100000.0, 100000.0, 100000.0);
 
         BoundingBox {
             min_vector: self.origin - far + self.normal * far,
@@ -560,9 +532,10 @@ impl SceneObject for Triangle {
         let pvec = ray.direction.cross_product(&ac);
         let det = ab.dot(&pvec);
 
-        if det < std::f64::EPSILON {
-            return None;
-        }
+        // TODO: Disable backface culling in config
+        //if det < std::f64::EPSILON {
+        //return None;
+        //}
         if det.abs() < std::f64::EPSILON {
             return None;
         }

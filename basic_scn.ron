@@ -30,12 +30,13 @@
         recursion_depth: 3,
         denoise: false,
         dither: false,
-        multi_thread: false,
+        multi_thread: true,
         reflections: true,
         refractions: true,
         shadows: true,
         textures: true,
         skybox: true,
+	backface_culling: true,
     ),
     shapes: [
 	 Sphere((

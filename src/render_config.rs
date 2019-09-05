@@ -15,6 +15,7 @@ pub struct RenderConfig {
     pub shadows: bool,
     pub textures: bool,
     pub skybox: bool,
+    pub backface_culling: bool,
 }
 
 impl Default for RenderConfig {
@@ -34,6 +35,7 @@ impl Default for RenderConfig {
             shadows: true,
             textures: true,
             skybox: true,
+            backface_culling: false,
         }
     }
 }
@@ -65,6 +67,7 @@ impl RenderConfig {
                 ui.checkbox(im_str!("Shadows"), &mut self.shadows);
                 ui.checkbox(im_str!("Textures"), &mut self.textures);
                 ui.checkbox(im_str!("Skybox"), &mut self.skybox);
+                ui.checkbox(im_str!("Backface Culling"), &mut self.backface_culling);
             });
     }
 }

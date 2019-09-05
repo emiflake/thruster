@@ -9,7 +9,7 @@ use thruster::shape::{Shape, Triangle};
 use thruster::texture_map;
 
 pub fn main() -> std::result::Result<(), String> {
-    let texture_map = texture_map::TextureMap::new();
+    let mut texture_map = texture_map::TextureMap::new();
 
     let scn_str =
         std::fs::read_to_string("cfg.ron").expect("Could not read configuration file 'cfg.ron'");
@@ -43,10 +43,10 @@ pub fn main() -> std::result::Result<(), String> {
             material: Material {
                 texture: MatTex::Color(Vec3::new(255.0, 255.0, 255.0)),
                 c_ambient: 0.3,
-                c_diffuse: 0.7,
+                c_diffuse: 0.3,
                 reflectivity: Reflectivity {
-                    amount: 0.0,
-                    blurriness: 0.0,
+                    amount: 0.4,
+                    blurriness: 1.0,
                 },
                 transparency: Transparency {
                     amount: 0.0,
@@ -85,10 +85,10 @@ pub fn main() -> std::result::Result<(), String> {
                     scaling: Vec2::new(1.0, 1.0),
                 },
                 c_ambient: 0.3,
-                c_diffuse: 0.7,
+                c_diffuse: 0.3,
                 reflectivity: Reflectivity {
-                    amount: 0.0,
-                    blurriness: 0.0,
+                    amount: 0.4,
+                    blurriness: 1.0,
                 },
                 transparency: Transparency {
                     amount: 0.0,
@@ -102,5 +102,8 @@ pub fn main() -> std::result::Result<(), String> {
     let mut app = app::App::new(scene, texture_map);
 
     app.run()?;
+
+    //texture_map.preload_all_in_scene(&scene);
+    //scene.screenshot("screenshot.png", 3840.0, 2160.0, &texture_map);
     Ok(())
 }
