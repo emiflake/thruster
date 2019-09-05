@@ -1,3 +1,6 @@
+use serde_derive::{Deserialize, Serialize};
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct RenderConfig {
     pub reflection_spp: i32,
     pub refraction_spp: i32,
@@ -22,7 +25,7 @@ impl Default for RenderConfig {
             shadow_spp: 3,
             distributed_tracing: true,
             recursion_depth: 3,
-            denoise: true,
+            denoise: false,
             dither: false,
             multi_thread: true,
 
@@ -56,6 +59,7 @@ impl RenderConfig {
                 ui.slider_int(im_str!("Recursion depth"), &mut self.recursion_depth, 1, 15)
                     .build();
                 ui.checkbox(im_str!("Dither"), &mut self.dither);
+                ui.checkbox(im_str!("Denoise"), &mut self.denoise);
                 ui.checkbox(im_str!("Reflections"), &mut self.reflections);
                 ui.checkbox(im_str!("Refractions"), &mut self.refractions);
                 ui.checkbox(im_str!("Shadows"), &mut self.shadows);

@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        ::::::::            */
-/*   dither.rs                                          :+:    :+:            */
-/*                                                     +:+                    */
-/*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
-/*                                                   +#+                      */
-/*   Created: 2019/07/27 12:39:28 by nmartins       #+#    #+#                */
-/*   Updated: 2019/08/05 16:40:29 by nmartins      ########   odam.nl         */
-/*                                                                            */
-/* ************************************************************************** */
-
 #![allow(dead_code)]
 
 use crate::algebra::Vec3;
@@ -75,12 +63,7 @@ pub struct Dither {
 }
 
 impl Dither {
-    pub fn dither_image(
-        &self,
-        buf: ImageBuffer<Rgba<u8>, Vec<u8>>,
-    ) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
-        let mut new_buf = buf.clone();
-
+    pub fn dither_image(&self, mut buf: &mut ImageBuffer<Rgba<u8>, Vec<u8>>) {
         fn add_color(pixel: &mut Rgba<u8>, delta: Vec3) {
             let curr = Vec3::from_rgba(*pixel);
             let new = (curr + delta).clamp_as_color();
@@ -95,18 +78,16 @@ impl Dither {
 
         for y in 0..buf.height() {
             for x in 0..buf.width() {
-                let old_pixel = new_buf.get_pixel(x, y);
+                let old_pixel = buf.get_pixel(x, y);
                 let old_color = Vec3::from_rgba(*old_pixel);
                 let new_color = self.palette.nearest_color(old_color);
-                new_buf.put_pixel(x, y, new_color.to_rgba());
+                buf.put_pixel(x, y, new_color.to_rgba());
                 let quant_error = old_color - new_color;
-                add_coords(&mut new_buf, x + 1, y, quant_error * 7.0 / 16.0);
-                add_coords(&mut new_buf, x - 1, y + 1, quant_error * 3.0 / 16.0);
-                add_coords(&mut new_buf, x, y + 1, quant_error * 5.0 / 16.0);
-                add_coords(&mut new_buf, x + 1, y + 1, quant_error * 1.0 / 16.0);
+                add_coords(&mut buf, x + 1, y, quant_error * 7.0 / 16.0);
+                add_coords(&mut buf, x - 1, y + 1, quant_error * 3.0 / 16.0);
+                add_coords(&mut buf, x, y + 1, quant_error * 5.0 / 16.0);
+                add_coords(&mut buf, x + 1, y + 1, quant_error * 1.0 / 16.0);
             }
         }
-
-        new_buf
     }
 }

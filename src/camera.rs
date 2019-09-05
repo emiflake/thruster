@@ -1,29 +1,23 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        ::::::::            */
-/*   camera.rs                                          :+:    :+:            */
-/*                                                     +:+                    */
-/*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
-/*                                                   +#+                      */
-/*   Created: 2019/07/19 18:23:53 by nmartins       #+#    #+#                */
-/*   Updated: 2019/08/05 15:31:20 by nmartins      ########   odam.nl         */
-/*                                                                            */
-/* ************************************************************************** */
-
 use crate::algebra::Vec3;
-use crate::scene::Scene;
+use crate::scene::RenderData;
 use crate::shape::Ray;
 use rand::prelude::*;
 
+use serde_derive::{Deserialize, Serialize};
+
+/// A camera is an entity that can cast [ray](../shape/struct.Ray.html)s.
 pub trait Camera {
+    /// Project a Ray into the scene
     fn project_rays(
         &self,
         screen_pos: (f64, f64),
         screen_dim: (f64, f64),
-        scene: &Scene,
+        scene: &RenderData,
     ) -> Vec<Ray>;
 }
 
+/// A very simple Perspective Camera which will cast rays in a natural way.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct PerspectiveCamera {
     pub position: Vec3,
     pub rotation: Vec3,
@@ -40,6 +34,7 @@ impl PerspectiveCamera {
         }
     }
 
+    /// Move the Camera by a Vector
     #[allow(dead_code)]
     pub fn translate(&mut self, v3: Vec3) {
         self.position.x += self.rotation.y.cos() * v3.x - self.rotation.y.sin() * v3.z;
@@ -55,7 +50,12 @@ impl PerspectiveCamera {
 const DISTRIB_CAMERA: bool = false;
 
 impl Camera for PerspectiveCamera {
-    fn project_rays(&self, (sx, sy): (f64, f64), (w, h): (f64, f64), scene: &Scene) -> Vec<Ray> {
+    fn project_rays(
+        &self,
+        (sx, sy): (f64, f64),
+        (w, h): (f64, f64),
+        scene: &RenderData,
+    ) -> Vec<Ray> {
         if DISTRIB_CAMERA && scene.config.distributed_tracing {
             let mut rng = rand::thread_rng();
             let aspect_ratio = w / h;

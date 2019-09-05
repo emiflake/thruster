@@ -2,6 +2,7 @@ use crate::key_state::Keystate;
 use crate::profiler::Profiler;
 use crate::scene::Scene;
 use crate::support;
+use crate::texture_map::TextureMap;
 
 use glium::Surface;
 
@@ -15,13 +16,15 @@ use std::thread;
 #[allow(unused_imports)]
 use std::time::{Duration, Instant};
 
-pub struct App<'a> {
-    pub scene: Scene<'a>,
+pub struct App {
+    pub scene: Scene,
+    pub texture_map: TextureMap,
 }
 
-impl<'a> App<'a> {
-    pub fn new(scene: Scene<'a>) -> App<'a> {
-        Self { scene }
+impl App {
+    pub fn new(scene: Scene, mut texture_map: TextureMap) -> App {
+        texture_map.preload_all_in_scene(&scene);
+        Self { scene, texture_map }
     }
 
     pub fn run(&mut self) -> Result<(), String> {
@@ -83,6 +86,35 @@ impl<'a> App<'a> {
 
             self.scene.config.draw_ui(&mut ui);
 
+            //imgui::Window::new(&ui, im_str!("Object Viewer"))
+            //.size([350.0, 650.0], Condition::FirstUseEver)
+            //.position([800.0, 50.0], Condition::FirstUseEver)
+            //.scroll_bar(true)
+            //.build(|| {
+            //if imgui::Ui::button(&ui, im_str!("Save"), [100.0, 25.0]) {
+            //let ron_str = ron::ser::to_string_pretty(
+            //&self.scene,
+            //ron::ser::PrettyConfig::default(),
+            //)
+            //.expect("Could not generate RON");
+            //let mut f = std::fs::OpenOptions::new()
+            //.write(true)
+            //.create(true)
+            //.open("./cfg.ron")
+            //.unwrap();
+            //f.write_all(ron_str.as_bytes())
+            //.expect("Could not save 'cfg.ron'");
+            //}
+            //ui.separator();
+
+            //for (i, sceneobject) in self.scene.shapes.iter_mut().enumerate() {
+            //ui.push_id(imgui::ImId::Int(i as i32));
+            //sceneobject.draw_ui(&ui);
+            //sceneobject.mat_mut().draw_ui(&ui);
+            //ui.pop_id();
+            //}
+            //});
+
             imgui::Window::new(&ui, im_str!("Screenshot"))
                 .size([300.0, 150.0], Condition::FirstUseEver)
                 .position([50.0, 500.0], Condition::FirstUseEver)
@@ -103,6 +135,7 @@ impl<'a> App<'a> {
                                 "screenshot.png",
                                 f64::from(dimensions[0]),
                                 f64::from(dimensions[1]),
+                                &self.texture_map,
                             )
                             .expect("Could not take screenshot");
                         self.scene.config.denoise = before;
@@ -120,7 +153,7 @@ impl<'a> App<'a> {
 
             handle_keys(&keystate, &mut self.scene, delta_time as f64);
 
-            let image = self.scene.new_render(640.0, 360.0);
+            let image = self.scene.new_render(640.0, 360.0, &self.texture_map);
             let image_dimensions = image.dimensions();
             let raw_pixels = image.into_raw();
 

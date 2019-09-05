@@ -1,24 +1,13 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        ::::::::            */
-/*   shape.rs                                           :+:    :+:            */
-/*                                                     +:+                    */
-/*   By: nmartins <nmartins@student.codam.nl>         +#+                     */
-/*                                                   +#+                      */
-/*   Created: 2019/07/19 18:17:32 by nmartins       #+#    #+#                */
-/*   Updated: 2019/08/05 16:40:25 by nmartins      ########   odam.nl         */
-/*                                                                            */
-/* ************************************************************************** */
-
 use crate::algebra::{Vec2, Vec3, Vertex};
-use crate::material::MatTex;
-use crate::scene::Scene;
+use crate::lightsource::Light;
+use crate::material::{MatTex, Material};
+use crate::scene::RenderData;
 
 use rand::prelude::*;
 
-//pub type Shape<'a> = Box<dyn SceneObject + 'a + Sync>;
+use serde_derive::{Deserialize, Serialize};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Shape {
     Sphere(Sphere),
     Plane(Plane),
@@ -31,6 +20,14 @@ impl SceneObject for Shape {
             Self::Sphere(s) => s.mat(),
             Self::Plane(s) => s.mat(),
             Self::Triangle(s) => s.mat(),
+        }
+    }
+
+    fn mat_mut(&mut self) -> &mut Material {
+        match self {
+            Self::Sphere(s) => s.mat_mut(),
+            Self::Plane(s) => s.mat_mut(),
+            Self::Triangle(s) => s.mat_mut(),
         }
     }
 
@@ -49,19 +46,36 @@ impl SceneObject for Shape {
             Self::Triangle(s) => s.bounding_box(),
         }
     }
+
+    fn draw_ui(&mut self, ui: &imgui::Ui) {
+        match self {
+            Self::Sphere(s) => s.draw_ui(ui),
+            Self::Plane(s) => s.draw_ui(ui),
+            Self::Triangle(s) => s.draw_ui(ui),
+        }
+    }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+/// A Ray that is to be casted, should be created using the `new` function
+#[derive(Debug, Clone, PartialEq)]
 pub struct Ray {
+    /// The position the ray starts from
     pub origin: Vec3,
+
+    /// The direction the ray is cast towards
     pub direction: Vec3,
+
+    /// The maximum recursion level
     pub level: i32,
 
+    /// *Precomputed* value for some uses.
     pub inv_dir: Vec3,
+    /// *Precomputed* value for some uses.
     pub sign: Vec3,
 }
 
 impl Ray {
+    /// The preferred way to create a Ray. This function already precomputes `inv_dir` and `sign`
     pub fn new(origin: Vec3, direction: Vec3, level: i32) -> Self {
         Self {
             origin,
@@ -77,16 +91,32 @@ impl Ray {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+/// Represents a found intersection between a Ray and an Object
+#[derive(Debug, Clone, PartialEq)]
 pub struct Intersection {
+    /// The 'distance' the ray hit at. This is derived from ```p = rO + t * rD```
     pub t: f64,
+
+    /// The normal from the shape at the intersection
     pub normal: Vec3,
+
+    /// The position the ray hit the object at
     pub origin: Vec3,
+
+    /// The texture position in UV-space that the ray intersects
     pub text_pos: Vec2,
 }
 
+/// A Bounding Box to represent the maximum range of an object, this is useful for Ray intersection
+/// checking since it will guarantee that any Ray that can intersect the object, will also
+/// intersect with this BoundingBox. Shapes must implement a function that generates this
+/// BoundingBox such that they can in general be optimized with the
+/// [BVHTree](../bvh/struct.BVHTree.html)
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BoundingBox {
+    /// The vector containing the low values of the bounding box
     pub min_vector: Vec3,
+    /// The vector containing the high values of the bounding box
     pub max_vector: Vec3,
 }
 
@@ -147,17 +177,27 @@ impl BoundingBox {
     }
 }
 
-use crate::material::Material;
+/// This trait describes what an object must be able to do in order to fit in our scene.
 pub trait SceneObject {
+    /// Get the material ref as a mutable
+    fn mat_mut(&mut self) -> &mut Material;
+
+    /// Get the material ref
     fn mat(&self) -> &Material;
-    /* Whether or not object intersects with the ray */
+
+    /// Whether or not object intersects with the ray
     fn do_intersect(&self, ray: &Ray) -> Option<Intersection>;
 
+    /// Calculate the [BoundingBox](struct.BoundingBox.html0
     fn bounding_box(&self) -> BoundingBox;
+
+    /// Draw the UI widget for modifying objects
+    fn draw_ui(&mut self, ui: &imgui::Ui);
 }
 
 impl Ray {
-    pub fn cast<'a>(&self, scene: &'a Scene) -> Vec<(Intersection, &'a Shape)> {
+    /// Use the [BVHTree](../bvh/struct.BVHTree.html) to find the nearest intersection
+    pub fn cast<'a>(&self, scene: &'a RenderData) -> Vec<(Intersection, &'a Shape)> {
         if let Some(is) = scene.bvh.intersect(self) {
             vec![is]
         } else {
@@ -165,10 +205,14 @@ impl Ray {
         }
     }
 
+    /// The color function of a Ray, allows it to generate coloring for a Ray trace.
+    ///
+    /// **TODO:** Allow simplify this function in some way, possibly by abstracting, this is
+    /// complicated due to the complex nature of the equation.
     pub fn color_function<'a>(
         &self,
         intersections: Vec<(Intersection, &Shape)>,
-        scene: &Scene,
+        scene: &RenderData,
     ) -> Option<Vec3> {
         let mut rng = rand::thread_rng();
         let mut closest = intersections.first()?;
@@ -177,19 +221,27 @@ impl Ray {
                 closest = intersection;
             }
         }
-        let inter = closest.0;
+        let inter = &closest.0;
         let mat = closest.1.mat();
         let orig_color = match &mat.texture {
             MatTex::Color(col) => *col,
             MatTex::Texture { handle, scaling } => {
-                let text = scene.texture_map.get_image_by_handle(*handle).unwrap();
+                if scene.config.textures {
+                    let text = scene
+                        .texture_map
+                        .get_image_by_handle(handle.clone())
+                        .unwrap();
 
-                let pixel = text.get_pixel(
-                    (inter.text_pos.x * f64::from(text.width()) / scaling.x) as u32 % text.width(),
-                    (inter.text_pos.y * f64::from(text.height()) / scaling.y) as u32
-                        % text.height(),
-                );
-                Vec3::from_rgb(*pixel)
+                    let pixel = text.get_pixel(
+                        (inter.text_pos.x * f64::from(text.width()) / scaling.x) as u32
+                            % text.width(),
+                        (inter.text_pos.y * f64::from(text.height()) / scaling.y) as u32
+                            % text.height(),
+                    );
+                    Vec3::from_rgb(*pixel)
+                } else {
+                    Vec3::new(127.0, 127.0, 127.0)
+                }
             }
         };
         let mut diff_color = Vec3::ORIGIN;
@@ -199,23 +251,61 @@ impl Ray {
         }
         let n_dot_d = inter.normal.dot(&self.direction);
         let refr_color = {
-            if self.level <= 0 || !mat.transparency.is_transparent() || !scene.config.reflections {
+            if self.level <= 0 || !mat.transparency.is_transparent() || !scene.config.refractions {
                 Vec3::ORIGIN
             } else {
-                let ior = mat.transparency.index_of_refraction;
-                let eta = 2.0 - ior;
-                let o = self.direction * eta - inter.normal * (-n_dot_d + eta * n_dot_d);
-                let ray = Ray::new(inter.origin - inter.normal * 0.01, o, self.level - 1);
-                match ray.color_function(ray.cast(scene), scene) {
-                    Some(color) => color,
-                    _ => {
-                        if scene.config.skybox {
-                            scene
-                                .skybox
-                                .calc_color(scene, ray.direction)
-                                .unwrap_or(Vec3::ORIGIN)
-                        } else {
-                            Vec3::ORIGIN
+                if scene.config.distributed_tracing {
+                    let mut col = Vec3::ORIGIN;
+                    let blurriness = mat.transparency.blurriness;
+                    let spp = if blurriness == 0.0 {
+                        1
+                    } else {
+                        scene.config.refraction_spp
+                    };
+
+                    let ior = mat.transparency.index_of_refraction;
+                    let eta = 2.0 - ior;
+                    let o = self.direction * eta - inter.normal * (-n_dot_d + eta * n_dot_d);
+                    for _ in 0..spp {
+                        let ray = Ray::new(
+                            inter.origin - inter.normal * 0.01,
+                            o.rotate(Vec3::new(
+                                (rng.gen::<f64>() - 0.5) * blurriness,
+                                (rng.gen::<f64>() - 0.5) * blurriness,
+                                (rng.gen::<f64>() - 0.5) * blurriness,
+                            )),
+                            self.level - 1,
+                        );
+                        match ray.color_function(ray.cast(scene), scene) {
+                            Some(color) => col = col + color,
+                            _ => {
+                                if scene.config.skybox {
+                                    col = col
+                                        + scene
+                                            .skybox
+                                            .calc_color(scene, ray.direction)
+                                            .unwrap_or(Vec3::ORIGIN)
+                                }
+                            }
+                        }
+                    }
+                    col / f64::from(spp)
+                } else {
+                    let ior = mat.transparency.index_of_refraction;
+                    let eta = 2.0 - ior;
+                    let o = self.direction * eta - inter.normal * (-n_dot_d + eta * n_dot_d);
+                    let ray = Ray::new(inter.origin - inter.normal * 0.01, o, self.level - 1);
+                    match ray.color_function(ray.cast(scene), scene) {
+                        Some(color) => color,
+                        _ => {
+                            if scene.config.skybox {
+                                scene
+                                    .skybox
+                                    .calc_color(scene, ray.direction)
+                                    .unwrap_or(Vec3::ORIGIN)
+                            } else {
+                                Vec3::ORIGIN
+                            }
                         }
                     }
                 }
@@ -294,7 +384,7 @@ impl Ray {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Sphere {
     pub origin: Vec3,
     pub radius: f64,
@@ -305,6 +395,10 @@ pub struct Sphere {
 impl SceneObject for Sphere {
     fn mat(&self) -> &Material {
         &self.material
+    }
+
+    fn mat_mut(&mut self) -> &mut Material {
+        &mut self.material
     }
 
     fn do_intersect(&self, ray: &Ray) -> Option<Intersection> {
@@ -353,9 +447,28 @@ impl SceneObject for Sphere {
             max_vector: self.origin + Vec3::new(1.0, 1.0, 1.0) * self.radius,
         }
     }
+
+    fn draw_ui(&mut self, ui: &imgui::Ui) {
+        let mut xyz = [
+            self.origin.x as f32,
+            self.origin.y as f32,
+            self.origin.z as f32,
+        ];
+        let mut radius = self.radius as f32;
+        ui.text("Sphere");
+        ui.separator();
+        ui.input_float3(im_str!("Sphere Position"), &mut xyz)
+            .build();
+        ui.input_float(im_str!("Sphere Radius"), &mut radius)
+            .build();
+        self.origin.x = f64::from(xyz[0]);
+        self.origin.y = f64::from(xyz[1]);
+        self.origin.z = f64::from(xyz[2]);
+        self.radius = f64::from(radius);
+    }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Plane {
     pub origin: Vec3,
     pub normal: Vec3,
@@ -366,6 +479,10 @@ pub struct Plane {
 impl SceneObject for Plane {
     fn mat(&self) -> &Material {
         &self.material
+    }
+
+    fn mat_mut(&mut self) -> &mut Material {
+        &mut self.material
     }
 
     fn do_intersect(&self, ray: &Ray) -> Option<Intersection> {
@@ -392,10 +509,33 @@ impl SceneObject for Plane {
             max_vector: self.origin + far - self.normal * far,
         }
     }
+
+    fn draw_ui(&mut self, ui: &imgui::Ui) {
+        ui.text("Plane");
+        ui.separator();
+        let mut p = [
+            self.origin.x as f32,
+            self.origin.y as f32,
+            self.origin.z as f32,
+        ];
+        let mut n = [
+            self.normal.x as f32,
+            self.normal.y as f32,
+            self.normal.z as f32,
+        ];
+        ui.input_float3(im_str!("Plane Position"), &mut p).build();
+        ui.input_float3(im_str!("Plane Normal"), &mut n).build();
+        self.origin.x = f64::from(p[0]);
+        self.origin.y = f64::from(p[1]);
+        self.origin.z = f64::from(p[2]);
+        self.normal.x = f64::from(n[0]);
+        self.normal.y = f64::from(n[1]);
+        self.normal.z = f64::from(n[2]);
+    }
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Triangle {
     pub a: Vertex,
     pub b: Vertex,
@@ -407,6 +547,10 @@ pub struct Triangle {
 impl SceneObject for Triangle {
     fn mat(&self) -> &Material {
         &self.material
+    }
+
+    fn mat_mut(&mut self) -> &mut Material {
+        &mut self.material
     }
 
     fn do_intersect(&self, ray: &Ray) -> Option<Intersection> {
@@ -454,8 +598,12 @@ impl SceneObject for Triangle {
 
     fn bounding_box(&self) -> BoundingBox {
         BoundingBox {
-            min_vector: self.a.origin.min(self.b.origin).min(self.c.origin),
-            max_vector: self.a.origin.max(self.b.origin).max(self.c.origin),
+            min_vector: self.a.origin.min(&self.b.origin).min(&self.c.origin),
+            max_vector: self.a.origin.max(&self.b.origin).max(&self.c.origin),
         }
+    }
+
+    fn draw_ui(&mut self, ui: &imgui::Ui) {
+        ui.text("Triangle");
     }
 }

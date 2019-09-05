@@ -1,0 +1,114 @@
+(
+    camera: (
+        position: (
+            x: -29.59673088043928,
+            y: 10.68745090067387,
+            z: -318.08460984379053,
+        ),
+        rotation: (
+            x: 0,
+            y: 0,
+            z: 0,
+        ),
+        fov: 60,
+    ),
+    skybox: (
+        handles: (
+	    "./skybox/miramar/miramar_bk.png",
+	    "./skybox/miramar/miramar_ft.png",
+	    "./skybox/miramar/miramar_up.png",
+	    "./skybox/miramar/miramar_dn.png",
+	    "./skybox/miramar/miramar_rt.png",
+	    "./skybox/miramar/miramar_lf.png",
+        ),
+    ),
+    config: (
+        reflection_spp: 3,
+        refraction_spp: 3,
+        shadow_spp: 3,
+        distributed_tracing: false,
+        recursion_depth: 3,
+        denoise: false,
+        dither: false,
+        multi_thread: false,
+        reflections: true,
+        refractions: true,
+        shadows: true,
+        textures: true,
+        skybox: true,
+    ),
+    shapes: [
+	 Sphere((
+            origin: (
+                x: 0,
+                y: 0,
+                z: -35,
+            ),
+            radius: 5,
+            material: (
+                texture: Color((
+                    x: 255,
+                    y: 255,
+                    z: 255,
+                )),
+                c_diffuse: 0,
+                c_ambient: 0,
+                reflectivity: (
+                    amount: 0.0,
+                    blurriness: 0.0,
+                ),
+                transparency: (
+                    index_of_refraction: 1.2,
+                    blurriness: 0.05,
+                    amount: 1.0,
+                ),
+	    )
+	)),
+        Plane((
+            origin: (
+                x: 0,
+                y: -22.5,
+                z: 0,
+            ),
+            normal: (
+                x: 0,
+                y: 1,
+                z: 0,
+            ),
+            material: (
+                texture: Texture(
+                    handle: "./textures/wood.png",
+                    scaling: (
+                        x: 100,
+                        y: 100,
+                    ),
+                ),
+                c_diffuse: 0.7,
+                c_ambient: 0.1,
+                reflectivity: (
+                    amount: 0.2,
+                    blurriness: 0.05,
+                ),
+                transparency: (
+                    index_of_refraction: 1,
+                    blurriness: 0,
+                    amount: 0,
+                ),
+            ),
+        )),
+    ],
+    lights: [
+        Point((
+            origin: (
+                x: 0,
+                y: 30,
+                z: -50,
+            ),
+            color: (
+                x: 255,
+                y: 255,
+                z: 255,
+            ),
+        )),
+    ],
+)
