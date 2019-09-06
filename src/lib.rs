@@ -19,9 +19,13 @@ extern crate serde_derive;
 extern crate ron;
 extern crate serde;
 
+// C++'s nth-element provider in Rust
+// (!?)
+extern crate pdqselect;
+
+pub mod acceleration;
 pub mod algebra;
 pub mod app;
-pub mod bvh;
 pub mod camera;
 pub mod denoise;
 pub mod dither;
@@ -36,3 +40,4 @@ pub mod shape;
 pub mod skybox;
 pub mod support;
 pub mod texture_map;
+pub mod utils;

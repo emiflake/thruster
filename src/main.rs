@@ -15,7 +15,8 @@ pub fn main() -> std::result::Result<(), String> {
         std::fs::read_to_string("cfg.ron").expect("Could not read configuration file 'cfg.ron'");
     let mut scene: Scene = ron::de::from_str(&scn_str).expect("Could not parse 'cfg.ron'");
 
-    let obj = parser::parse("./objs/codam-text-low.obj".to_string()).expect("Could not parse .obj");
+    let obj =
+        parser::parse("./objs/codam-text-high.obj".to_string()).expect("Could not parse .obj");
     for (a, b, c) in obj.tris.iter() {
         let a = Vertex {
             origin: a.origin.rotate_around(0, std::f64::consts::FRAC_PI_2)
@@ -57,7 +58,7 @@ pub fn main() -> std::result::Result<(), String> {
         }))
     }
     let obj =
-        parser::parse("./objs/codam-stripes-low.obj".to_string()).expect("Could not parse .obj");
+        parser::parse("./objs/codam-stripes-high.obj".to_string()).expect("Could not parse .obj");
     for (a, b, c) in obj.tris.iter() {
         let a = Vertex {
             origin: a.origin.rotate_around(0, std::f64::consts::FRAC_PI_2),
@@ -103,7 +104,15 @@ pub fn main() -> std::result::Result<(), String> {
 
     app.run()?;
 
+    use thruster::acceleration::bvh::*;
+    //let accel = BVHAccel::new(BVHConstructionAlgorithm::Normal, scene.shapes.clone());
+    //let (total, node) = accel.construct().expect("Could not construct BVHTree");
+    //let flat_bvh = accel.flatten(Box::new(node), total);
+    //println!("Primitives:     {}", flat_bvh.primitives.len());
+    //println!("Expected Nodes: {}", flat_bvh.primitives.len() * 2 - 1);
+    //println!("Actual Nodes:   {}", flat_bvh.linear_nodes.len());
+
     //texture_map.preload_all_in_scene(&scene);
-    //scene.screenshot("screenshot.png", 3840.0, 2160.0, &texture_map);
+    //scene.screenshot("screenshot.png", 640.0, 480.0, &texture_map);
     Ok(())
 }

@@ -24,6 +24,7 @@ oidn = "0.2.0"
 serde = "1.0.99"
 serde_derive = "1.0.99"
 ron = "*"
+pdqselect = "0.1.0"
 
 [dev-dependencies]
 criterion = "0.3.0"

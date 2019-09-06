@@ -1,3 +1,4 @@
+use crate::acceleration::bounds::BoundingBox;
 use crate::algebra::{Vec2, Vec3, Vertex};
 use crate::lightsource::Light;
 use crate::material::{MatTex, Material};
@@ -105,76 +106,6 @@ pub struct Intersection {
 
     /// The texture position in UV-space that the ray intersects
     pub text_pos: Vec2,
-}
-
-/// A Bounding Box to represent the maximum range of an object, this is useful for Ray intersection
-/// checking since it will guarantee that any Ray that can intersect the object, will also
-/// intersect with this BoundingBox. Shapes must implement a function that generates this
-/// BoundingBox such that they can in general be optimized with the
-/// [BVHTree](../bvh/struct.BVHTree.html)
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BoundingBox {
-    /// The vector containing the low values of the bounding box
-    pub min_vector: Vec3,
-    /// The vector containing the high values of the bounding box
-    pub max_vector: Vec3,
-}
-
-impl BoundingBox {
-    fn bounds(&self, sign: f64) -> Vec3 {
-        if sign == 1.0 {
-            self.min_vector
-        } else {
-            self.max_vector
-        }
-    }
-
-    pub fn centre(&self) -> Vec3 {
-        (self.min_vector + self.max_vector) / 2.0
-    }
-
-    pub fn intersects_with(&self, ray: &Ray) -> bool {
-        let mut tmin = (self.bounds(ray.sign.x).x - ray.origin.x) * ray.inv_dir.x;
-        let mut tmax = (self.bounds(1.0 - ray.sign.x).x - ray.origin.x) * ray.inv_dir.x;
-        let tymin = (self.bounds(ray.sign.y).y - ray.origin.y) * ray.inv_dir.y;
-        let tymax = (self.bounds(1.0 - ray.sign.y).y - ray.origin.y) * ray.inv_dir.y;
-
-        if (tmin > tymax) || (tymin > tmax) {
-            return false;
-        }
-
-        if tymin > tmin {
-            tmin = tymin;
-        }
-        if tymax < tmax {
-            tmax = tymax;
-        }
-
-        let tzmin = (self.bounds(ray.sign.z).z - ray.origin.z) * ray.inv_dir.z;
-        let tzmax = (self.bounds(1.0 - ray.sign.z).z - ray.origin.z) * ray.inv_dir.z;
-
-        if (tmin > tzmax) || (tzmin > tmax) {
-            return false;
-        }
-
-        if tzmin > tmin {
-            tmin = tzmin;
-        }
-        if tzmax < tmax {
-            tmax = tzmax;
-        }
-
-        let mut t = tmin;
-
-        if t < 0.0 {
-            t = tmax;
-            if t < 0.0 {
-                return false;
-            }
-        }
-
-        true
-    }
 }
 
 /// This trait describes what an object must be able to do in order to fit in our scene.
