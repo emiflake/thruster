@@ -47,6 +47,142 @@ pub enum BVHConstructionAlgorithm {
     SAH,
 }
 
+impl BVHConstructionAlgorithm {
+    pub fn perform_partitioning(
+        self,
+        primitive_info: &mut [BVHPrimitiveInfo],
+        dimension: u32,
+        aggregate_bounds: &BoundingBox,
+        centroid_bounds: &BoundingBox,
+    ) -> Option<usize> {
+        match self {
+            BVHConstructionAlgorithm::Normal => {
+                unimplemented!("This function has a bug, so is unimplemented");
+                /*
+                // Default = Midpoint
+                let pmid = (centroid_bounds.min_vector.dim(dimension)
+                    + centroid_bounds.max_vector.dim(dimension))
+                    / 2.0;
+                let i = utils::partition(&mut primitive_info[start..end], |pi| {
+                    pi.centre.dim(dimension) < pmid
+                });
+                middle = i;
+                if i == start || i == end {
+                    use std::cmp::Ordering;
+                    middle = (start + end) / 2;
+                    pdqselect::select_by(
+                        &mut primitive_info[start..end],
+                        middle,
+                        |pa, pb| {
+                            if pa.centre.dim(dimension) > pb.centre.dim(dimension) {
+                                Ordering::Greater
+                            } else {
+                                Ordering::Less
+                            }
+                        },
+                    );
+                }
+                */
+            }
+            BVHConstructionAlgorithm::Equal => {
+                let middle = primitive_info.len() / 2;
+                pdqselect::select_by(primitive_info, middle, |pa, pb| {
+                    if pa.centre.dim(dimension) < pb.centre.dim(dimension) {
+                        Ordering::Greater
+                    } else {
+                        Ordering::Less
+                    }
+                });
+                Some(middle)
+            }
+            BVHConstructionAlgorithm::SAH => {
+                let len = primitive_info.len();
+                if len <= 4 {
+                    let middle = primitive_info.len() / 2;
+                    pdqselect::select_by(primitive_info, middle, |pa, pb| {
+                        if pa.centre.dim(dimension) > pb.centre.dim(dimension) {
+                            Ordering::Greater
+                        } else {
+                            Ordering::Less
+                        }
+                    });
+                    Some(middle)
+                } else {
+                    let bucket_amount = 12;
+                    let mut buckets: Vec<BucketInfo> = vec![BucketInfo::default(); bucket_amount];
+                    for info in primitive_info.iter() {
+                        let b = (f64::from(bucket_amount as u32)
+                            * centroid_bounds.offset(&info.centre).dim(dimension))
+                            as usize;
+                        let b = if b >= bucket_amount {
+                            bucket_amount - 1
+                        } else {
+                            b
+                        };
+                        assert!(b < bucket_amount);
+                        buckets[b].count += 1;
+                        buckets[b].bounding_box = buckets[b].bounding_box.merge(&info.bounding_box);
+                    }
+
+                    let mut cost = vec![0.0; bucket_amount - 1];
+                    for bucket_n in 0..bucket_amount - 1 {
+                        let mut bounds_a = BoundingBox::EMPTY;
+                        let mut bounds_b = BoundingBox::EMPTY;
+                        let mut count_a = 0;
+                        let mut count_b = 0;
+                        for j in 0..bucket_n {
+                            bounds_a = bounds_a.merge(&buckets[j].bounding_box);
+                            count_a += buckets[j].count;
+                        }
+                        for j in (bucket_n + 1)..bucket_amount {
+                            bounds_b = bounds_b.merge(&buckets[j].bounding_box);
+                            count_b += buckets[j].count;
+                        }
+                        cost[bucket_n] = 0.125
+                            + (f64::from(count_a as u32) * bounds_a.surface_area()
+                                + f64::from(count_b as u32) * bounds_b.surface_area())
+                                / aggregate_bounds.surface_area();
+                    }
+
+                    let mut minimum = (cost[0], 0);
+                    for i in 1..bucket_amount - 1 {
+                        if cost[i] < minimum.0 {
+                            minimum = (cost[i], i);
+                        }
+                    }
+                    //println!("Best bucket for dim {}: {:?}", dimension, minimum);
+                    //println!(
+                    //"All buckets {:#?}",
+                    //buckets
+                    //.iter()
+                    //.enumerate()
+                    //.map(|(i, b)| (cost.get(i), b.count))
+                    //.collect::<Vec<(Option<&f64>, usize)>>()
+                    //);
+
+                    let leaf_cost = len;
+                    if leaf_cost > 1 || minimum.0 < f64::from(leaf_cost as u32) {
+                        let middle = utils::partition(primitive_info, |pi: &BVHPrimitiveInfo| {
+                            let b = (f64::from(bucket_amount as u32)
+                                * centroid_bounds.offset(&pi.centre).dim(dimension))
+                                as usize;
+                            let b = if b >= bucket_amount {
+                                bucket_amount - 1
+                            } else {
+                                b
+                            };
+                            b <= minimum.1
+                        });
+                        Some(middle)
+                    } else {
+                        None
+                    }
+                }
+            }
+        }
+    }
+}
+
 impl Default for BVHConstructionAlgorithm {
     fn default() -> Self {
         Self::SAH
@@ -126,15 +262,8 @@ impl BVHAccel {
             let mut total_nodes = 0;
             let mut ordered_shapes = Vec::new();
 
-            let len = primitive_info.len();
-
-            let node = self.recursive_build(
-                &mut primitive_info,
-                0,
-                len,
-                &mut total_nodes,
-                &mut ordered_shapes,
-            );
+            let node =
+                self.recursive_build(&mut primitive_info, &mut total_nodes, &mut ordered_shapes);
             self.primitives.swap_with_slice(&mut ordered_shapes);
             Some((total_nodes, node))
         }
@@ -145,14 +274,12 @@ impl BVHAccel {
     pub fn recursive_build(
         &self,
         primitive_info: &mut [BVHPrimitiveInfo],
-        start: usize,
-        end: usize,
         total_nodes: &mut usize,
         ordered_shapes: &mut Vec<Shape>,
     ) -> BVHBuildNode {
-        assert_ne!(start, end);
+        assert!(primitive_info.len() > 0);
         *total_nodes += 1;
-        let aggregate_bounds: BoundingBox = primitive_info[start..end]
+        let aggregate_bounds: BoundingBox = primitive_info
             .iter()
             .fold(None, |acc: Option<BoundingBox>, b| match acc {
                 Some(a) => Some(a.merge(&b.bounding_box)),
@@ -160,199 +287,56 @@ impl BVHAccel {
             })
             .unwrap();
 
-        let primitive_amount = end - start;
-        if primitive_amount == 1 {
+        let len = primitive_info.len();
+        if len == 1 {
             let first_offset = ordered_shapes.len();
-            for i in start..end {
-                let prim_num = primitive_info[i].index;
-                ordered_shapes.push(self.primitives[prim_num].clone()); // TODO: Remove clone; this should be possible by using Rc during construction instead of pure Shapes
+            for info in primitive_info {
+                ordered_shapes.push(self.primitives[info.index].clone()); // TODO: Remove clone; this should be possible by using Rc during construction instead of pure Shapes
             }
-            BVHBuildNode::new_leaf(first_offset, primitive_amount, aggregate_bounds)
+            BVHBuildNode::new_leaf(first_offset, len, aggregate_bounds)
         } else {
-            let centroid_bounds = primitive_info[start..end]
+            let centroid_bounds = primitive_info
                 .iter()
-                .fold(None, |acc: Option<BoundingBox>, b| match acc {
-                    Some(a) => Some(a.merge_with_vec(&b.centre)),
-                    None => Some(BoundingBox {
-                        min_vector: b.centre,
-                        max_vector: b.centre,
-                    }),
-                })
-                .unwrap();
+                .fold(BoundingBox::EMPTY, |a: BoundingBox, b| {
+                    a.merge_with_vec(&b.centre)
+                });
             let dimension = centroid_bounds.max_extent();
-            let mut middle;
             if centroid_bounds.max_vector.dim(dimension)
                 == centroid_bounds.min_vector.dim(dimension)
             {
                 // Centroid bounds are small, construct leaf node.
                 let first_offset = ordered_shapes.len();
-                for i in start..end {
-                    let prim_num = primitive_info[i].index;
-                    ordered_shapes.push(self.primitives[i].clone()); // TODO: See above
+                for info in primitive_info {
+                    ordered_shapes.push(self.primitives[info.index].clone()); // TODO: See above
                 }
-                BVHBuildNode::new_leaf(first_offset, primitive_amount, aggregate_bounds)
+                BVHBuildNode::new_leaf(first_offset, len, aggregate_bounds)
             } else {
-                match self.algorithm {
-                    BVHConstructionAlgorithm::Normal => {
-                        unimplemented!("This function has a bug, so is unimplemented");
-                        /*
-                        // Default = Midpoint
-                        let pmid = (centroid_bounds.min_vector.dim(dimension)
-                            + centroid_bounds.max_vector.dim(dimension))
-                            / 2.0;
-                        let i = utils::partition(&mut primitive_info[start..end], |pi| {
-                            pi.centre.dim(dimension) < pmid
-                        });
-                        middle = i;
-                        if i == start || i == end {
-                            use std::cmp::Ordering;
-                            middle = (start + end) / 2;
-                            pdqselect::select_by(
-                                &mut primitive_info[start..end],
-                                middle,
-                                |pa, pb| {
-                                    if pa.centre.dim(dimension) > pb.centre.dim(dimension) {
-                                        Ordering::Greater
-                                    } else {
-                                        Ordering::Less
-                                    }
-                                },
-                            );
-                        }
-                        */
-                    }
-                    BVHConstructionAlgorithm::Equal => {
-                        middle = (start + end) / 2;
-                        pdqselect::select_by(&mut primitive_info[start..end], middle, |pa, pb| {
-                            if pa.centre.dim(dimension) > pb.centre.dim(dimension) {
-                                Ordering::Greater
-                            } else {
-                                Ordering::Less
-                            }
-                        });
-                    }
-                    BVHConstructionAlgorithm::SAH => {
-                        if primitive_amount <= 4 {
-                            middle = (start + end) / 2;
-                            pdqselect::select_by(
-                                &mut primitive_info[start..end],
-                                middle,
-                                |pa, pb| {
-                                    if pa.centre.dim(dimension) > pb.centre.dim(dimension) {
-                                        Ordering::Greater
-                                    } else {
-                                        Ordering::Less
-                                    }
-                                },
-                            );
-                        } else {
-                            let bucket_amount = 12;
-                            let mut buckets: Vec<BucketInfo> =
-                                vec![BucketInfo::default(); bucket_amount];
-                            for i in start..end {
-                                let b = (f64::from(bucket_amount as u32)
-                                    * centroid_bounds
-                                        .offset(&primitive_info[i].centre)
-                                        .dim(dimension))
-                                    as usize;
-                                let b = if b >= bucket_amount {
-                                    bucket_amount - 1
-                                } else {
-                                    b
-                                };
-                                assert!(b < bucket_amount);
-                                buckets[b].count += 1;
-                                buckets[b].bounding_box = buckets[b]
-                                    .bounding_box
-                                    .merge(&primitive_info[i].bounding_box);
-                            }
-
-                            let mut cost = vec![0.0; bucket_amount - 1];
-                            for bucket_n in 0..bucket_amount - 1 {
-                                let mut bounds_a = BoundingBox::EMPTY;
-                                let mut bounds_b = BoundingBox::EMPTY;
-                                let mut count_a = 0;
-                                let mut count_b = 0;
-                                for j in 0..bucket_n {
-                                    bounds_a = bounds_a.merge(&buckets[j].bounding_box);
-                                    count_a += buckets[j].count;
-                                }
-                                for j in (bucket_n + 1)..bucket_amount {
-                                    bounds_b = bounds_b.merge(&buckets[j].bounding_box);
-                                    count_b += buckets[j].count;
-                                }
-                                cost[bucket_n] = 0.125
-                                    + (f64::from(count_a as u32) * bounds_a.surface_area()
-                                        + f64::from(count_b as u32) * bounds_b.surface_area())
-                                        / aggregate_bounds.surface_area();
-                            }
-
-                            let mut minimum = (cost[0], 0);
-                            for i in 1..bucket_amount - 1 {
-                                if cost[i] < minimum.0 {
-                                    minimum = (cost[i], i);
-                                }
-                            }
-                            println!("Best bucket for dim {}: {:?}", dimension, minimum);
-                            println!(
-                                "All buckets {:#?}",
-                                buckets
-                                    .iter()
-                                    .enumerate()
-                                    .map(|(i, b)| (cost.get(i), b.count))
-                                    .collect::<Vec<(Option<&f64>, usize)>>()
-                            );
-
-                            let leaf_cost = primitive_amount;
-                            if primitive_amount > 1 || minimum.0 < f64::from(leaf_cost as u32) {
-                                middle = utils::partition(
-                                    &mut primitive_info[start..end],
-                                    |pi: &BVHPrimitiveInfo| {
-                                        let b = (f64::from(bucket_amount as u32)
-                                            * centroid_bounds.offset(&pi.centre).dim(dimension))
-                                            as usize;
-                                        let b = if b >= bucket_amount {
-                                            bucket_amount - 1
-                                        } else {
-                                            b
-                                        };
-                                        b <= minimum.1
-                                    },
-                                );
-                            } else {
-                                let first_offset = ordered_shapes.len();
-                                for i in start..end {
-                                    let prim_num = primitive_info[i].index;
-                                    ordered_shapes.push(self.primitives[i].clone()); // TODO: See above
-                                }
-                                return BVHBuildNode::new_leaf(
-                                    first_offset,
-                                    primitive_amount,
-                                    aggregate_bounds,
-                                );
-                            }
-                        }
-                    }
-                };
-                println!("{} - {} - {}", start, middle, end);
-                assert!(start < middle && middle < end, "Order of indices is wrong");
-                BVHBuildNode::new_branch(
+                if let Some(middle) = self.algorithm.perform_partitioning(
+                    primitive_info,
                     dimension,
-                    Box::new(self.recursive_build(
-                        primitive_info,
-                        start,
-                        middle,
-                        total_nodes,
-                        ordered_shapes,
-                    )),
-                    Box::new(self.recursive_build(
-                        primitive_info,
-                        middle,
-                        end,
-                        total_nodes,
-                        ordered_shapes,
-                    )),
-                )
+                    &aggregate_bounds,
+                    &centroid_bounds,
+                ) {
+                    BVHBuildNode::new_branch(
+                        dimension,
+                        Box::new(self.recursive_build(
+                            &mut primitive_info[..middle],
+                            total_nodes,
+                            ordered_shapes,
+                        )),
+                        Box::new(self.recursive_build(
+                            &mut primitive_info[middle..],
+                            total_nodes,
+                            ordered_shapes,
+                        )),
+                    )
+                } else {
+                    let first_offset = ordered_shapes.len();
+                    for info in primitive_info {
+                        ordered_shapes.push(self.primitives[info.index].clone()); // TODO: See above
+                    }
+                    return BVHBuildNode::new_leaf(first_offset, len, aggregate_bounds);
+                }
             }
         }
     }

@@ -16,8 +16,16 @@ pub struct BoundingBox {
 
 impl BoundingBox {
     pub const EMPTY: Self = Self {
-        min_vector: Vec3::ORIGIN,
-        max_vector: Vec3::ORIGIN,
+        min_vector: Vec3 {
+            x: std::f64::MAX,
+            y: std::f64::MAX,
+            z: std::f64::MAX,
+        },
+        max_vector: Vec3 {
+            x: std::f64::MIN,
+            y: std::f64::MIN,
+            z: std::f64::MIN,
+        },
     };
 
     // TODO: take a look at this
