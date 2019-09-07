@@ -76,7 +76,7 @@ impl std::ops::Neg for Vec3 {
 /// Make an object clampable between two instances of itself
 /// # Example:
 /// ```
-/// use thruster::algebra::Clampable;
+/// use thruster::algebra::vectors::Clampable;
 /// println!("{}", (5f64).clamp_to(2.0, 10.0));
 /// //=>  2.0
 /// println!("{}", (14f64).clamp_to(2.0, 10.0));
@@ -416,9 +416,6 @@ mod tests {
         assert_eq!(a.dim(0), 3.0);
         assert_eq!(a.dim(1), 2.0);
         assert_eq!(a.dim(2), 1.0);
-        assert_eq!(a.dim(3), 3.0);
-        assert_eq!(a.dim(30), 3.0);
-        assert_eq!(a.dim(300), 3.0);
     }
 
 }
