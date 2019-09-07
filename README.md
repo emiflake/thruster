@@ -1,4 +1,4 @@
-# Thruster
+# Thruster [![dependency status](https://deps.rs/repo/github/emiflake/thruster/status.svg)](https://deps.rs/repo/github/emiflake/thruster) [![build status](https://travis-ci.com/emiflake/thruster.svg?branch=master)](https://travis-ci.org/emiflake/thruster) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) ![Language](https://img.shields.io/github/languages/top/emiflake/thruster)
 A Rust Raytracer
 
 :warning: This is a work in progress project :warning:
