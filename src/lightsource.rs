@@ -1,4 +1,4 @@
-use crate::algebra::Vec3;
+use crate::algebra::prelude::*;
 use crate::scene::RenderData;
 use crate::shape::{Intersection, Ray};
 use serde_derive::{Deserialize, Serialize};
@@ -53,17 +53,16 @@ impl Light for PointLight {
                     (rng.gen::<f64>() - 0.5) * blurriness,
                     (rng.gen::<f64>() - 0.5) * blurriness,
                 ));
-            if scene.config.shadows {
-                if Ray::new(
+            if scene.config.shadows
+                && Ray::new(
                     intersection.origin + intersection.normal * 0.001,
                     light_ray,
                     0,
                 )
                 .cast(&scene)
                 .is_some()
-                {
-                    continue 'sample_loop;
-                }
+            {
+                continue 'sample_loop;
             }
 
             let dot = intersection.normal.dot(&light_ray);

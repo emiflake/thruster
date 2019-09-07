@@ -1,4 +1,4 @@
-use crate::algebra::{Vec2, Vec3, Vertex};
+use crate::algebra::prelude::*;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
@@ -83,7 +83,7 @@ pub fn parse(path: String) -> Result<Object, ParseError> {
                                     .parse::<usize>()
                                     .map_err(|_| ParseError::MalformedVertex(line_no))?
                                     - 1],
-                                uv: uv,
+                                uv,
                                 normal: normals[norm
                                     .parse::<usize>()
                                     .map_err(|_| ParseError::MalformedVertex(line_no))?

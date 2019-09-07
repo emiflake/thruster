@@ -1,5 +1,4 @@
-use crate::acceleration::bounds::BoundingBox;
-use crate::algebra::{Vec2, Vec3, Vertex};
+use crate::algebra::prelude::*;
 use crate::lightsource::Light;
 use crate::material::{MatTex, Material};
 use crate::scene::RenderData;
@@ -136,7 +135,7 @@ impl Ray {
     ///
     /// **TODO:** Allow simplify this function in some way, possibly by abstracting, this is
     /// complicated due to the complex nature of the equation.
-    pub fn color_function<'a>(
+    pub fn color_function(
         &self,
         closest: Option<(Intersection, &Shape)>,
         scene: &RenderData,
@@ -395,7 +394,7 @@ impl SceneObject for Plane {
     }
 
     fn bounding_box(&self) -> BoundingBox {
-        let far = Vec3::new(100000.0, 100000.0, 100000.0);
+        let far = Vec3::new(100_000.0, 100_000.0, 100_000.0);
 
         BoundingBox {
             min_vector: self.origin - far + self.normal * far,

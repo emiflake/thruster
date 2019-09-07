@@ -5,9 +5,8 @@
 // It's the very backbone of the performance that Thruster has, and so it's the piece that needs
 // most performance tweaking.
 
-use crate::acceleration::bounds::BoundingBox;
 use crate::acceleration::queue_systems::FastStack;
-use crate::algebra::Vec3;
+use crate::algebra::prelude::*;
 use crate::shape::{Intersection, Ray, SceneObject, Shape};
 use crate::utils;
 
@@ -132,13 +131,13 @@ impl BVHConstructionAlgorithm {
                         let mut bounds_b = buckets[bucket_n + 1].bounding_box.clone();
                         let mut count_a = 0;
                         let mut count_b = 0;
-                        for j in 0..bucket_n {
-                            bounds_a = bounds_a.merge(&buckets[j].bounding_box);
-                            count_a += buckets[j].count;
+                        for bucket in buckets.iter().take(bucket_n - 1) {
+                            bounds_a = bounds_a.merge(&bucket.bounding_box);
+                            count_a += bucket.count;
                         }
-                        for j in (bucket_n + 1)..bucket_amount {
-                            bounds_b = bounds_b.merge(&buckets[j].bounding_box);
-                            count_b += buckets[j].count;
+                        for bucket in buckets.iter().skip(bucket_n - 1) {
+                            bounds_b = bounds_b.merge(&bucket.bounding_box);
+                            count_b += bucket.count;
                         }
                         //println!("Counts   : [{} A] - [{} B]", count_a, count_b);
                         //println!(
@@ -153,9 +152,9 @@ impl BVHConstructionAlgorithm {
                     }
 
                     let mut minimum = (cost[0], 0);
-                    for i in 1..bucket_amount - 1 {
-                        if cost[i] < minimum.0 {
-                            minimum = (cost[i], i);
+                    for (i, cost_elem) in cost.iter().enumerate().take(bucket_amount - 1).skip(1) {
+                        if cost_elem < &minimum.0 {
+                            minimum = (*cost_elem, i);
                         }
                     }
                     //println!("Chosen cost: {:?}", minimum);
@@ -278,7 +277,7 @@ impl BVHAccel {
         total_nodes: &mut usize,
         ordered_shapes: &mut Vec<Shape>,
     ) -> BVHBuildNode {
-        assert!(primitive_info.len() > 0);
+        assert!(!primitive_info.is_empty());
         *total_nodes += 1;
         let aggregate_bounds: BoundingBox = primitive_info.iter().fold(
             BoundingBox::EMPTY,
@@ -299,8 +298,10 @@ impl BVHAccel {
                     a.merge_with_vec(&b.centre)
                 });
             let dimension = centroid_bounds.max_extent();
-            if centroid_bounds.max_vector.dim(dimension)
-                == centroid_bounds.min_vector.dim(dimension)
+            if (centroid_bounds.max_vector.dim(dimension)
+                - centroid_bounds.min_vector.dim(dimension))
+            .abs()
+                < std::f64::EPSILON
             {
                 // Centroid bounds are small, construct leaf node.
                 let first_offset = ordered_shapes.len();
@@ -308,34 +309,32 @@ impl BVHAccel {
                     ordered_shapes.push(self.primitives[info.index].clone()); // TODO: See above
                 }
                 BVHBuildNode::new_leaf(first_offset, len, aggregate_bounds)
-            } else {
-                if let Some(middle) = self.algorithm.perform_partitioning(
-                    primitive_info,
+            } else if let Some(middle) = self.algorithm.perform_partitioning(
+                primitive_info,
+                dimension,
+                &aggregate_bounds,
+                &centroid_bounds,
+            ) {
+                //println!("0 - {} - {}", middle, len);
+                BVHBuildNode::new_branch(
                     dimension,
-                    &aggregate_bounds,
-                    &centroid_bounds,
-                ) {
-                    //println!("0 - {} - {}", middle, len);
-                    BVHBuildNode::new_branch(
-                        dimension,
-                        Box::new(self.recursive_build(
-                            &mut primitive_info[..middle],
-                            total_nodes,
-                            ordered_shapes,
-                        )),
-                        Box::new(self.recursive_build(
-                            &mut primitive_info[middle..],
-                            total_nodes,
-                            ordered_shapes,
-                        )),
-                    )
-                } else {
-                    let first_offset = ordered_shapes.len();
-                    for info in primitive_info {
-                        ordered_shapes.push(self.primitives[info.index].clone()); // TODO: See above
-                    }
-                    return BVHBuildNode::new_leaf(first_offset, len, aggregate_bounds);
+                    Box::new(self.recursive_build(
+                        &mut primitive_info[..middle],
+                        total_nodes,
+                        ordered_shapes,
+                    )),
+                    Box::new(self.recursive_build(
+                        &mut primitive_info[middle..],
+                        total_nodes,
+                        ordered_shapes,
+                    )),
+                )
+            } else {
+                let first_offset = ordered_shapes.len();
+                for info in primitive_info {
+                    ordered_shapes.push(self.primitives[info.index].clone()); // TODO: See above
                 }
+                BVHBuildNode::new_leaf(first_offset, len, aggregate_bounds)
             }
         }
     }
@@ -436,14 +435,12 @@ impl BVHLinearTree {
                         None => return closest,
                         Some(task) => current_task = task,
                     };
+                } else if ray.inv_dir.dim(n.axis) < 0.0 {
+                    queue.push(current_task + 1);
+                    current_task = n.node_content;
                 } else {
-                    if ray.inv_dir.dim(n.axis) < 0.0 {
-                        queue.push(current_task + 1);
-                        current_task = n.node_content;
-                    } else {
-                        queue.push(n.node_content);
-                        current_task = current_task + 1;
-                    }
+                    queue.push(n.node_content);
+                    current_task += 1;
                 }
             } else {
                 match queue.pop() {

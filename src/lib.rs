@@ -23,7 +23,10 @@ extern crate serde;
 // (!?)
 extern crate pdqselect;
 
+/// Acceleration structures for speeding up rendering
 pub mod acceleration;
+
+/// Algebra & Maths
 pub mod algebra;
 pub mod app;
 pub mod camera;

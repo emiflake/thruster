@@ -4,13 +4,19 @@ pub struct StackQueue {
     end: usize,
 }
 
-impl StackQueue {
-    pub fn new() -> StackQueue {
+impl Default for StackQueue {
+    fn default() -> Self {
         Self {
             queue: [0; 64],
             start: 0,
             end: 0,
         }
+    }
+}
+
+impl StackQueue {
+    pub fn new() -> StackQueue {
+        Self::default()
     }
 
     pub fn push(&mut self, n: usize) {
@@ -41,12 +47,18 @@ pub struct FastStack {
     end: usize,
 }
 
-impl FastStack {
-    pub fn new() -> Self {
+impl Default for FastStack {
+    fn default() -> Self {
         Self {
             stack: [0; 64],
             end: 0,
         }
+    }
+}
+
+impl FastStack {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn push(&mut self, n: usize) {

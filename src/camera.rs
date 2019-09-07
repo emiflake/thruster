@@ -1,4 +1,4 @@
-use crate::algebra::Vec3;
+use crate::algebra::prelude::*;
 use crate::scene::RenderData;
 use crate::shape::Ray;
 use rand::prelude::*;
@@ -68,7 +68,7 @@ impl Camera for PerspectiveCamera {
             let direction = Vec3::new(px, py, 1.0).normalized().rotate(self.rotation);
 
             let blurriness = 0.0001;
-            let spp = if blurriness == 0.0 { 1 } else { 1 };
+            let spp = 1;
 
             let mut rays: Vec<Ray> = Vec::with_capacity(spp);
             for _ in 0..spp {

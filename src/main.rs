@@ -1,6 +1,6 @@
 #![allow(unused_variables)]
 
-use thruster::algebra::{Vec2, Vec3, Vertex};
+use thruster::algebra::prelude::*;
 use thruster::app;
 use thruster::material::{MatTex, Material, Reflectivity, Transparency};
 use thruster::parser;
@@ -9,7 +9,7 @@ use thruster::shape::{Shape, Triangle};
 use thruster::texture_map;
 
 pub fn main() -> std::result::Result<(), String> {
-    let mut texture_map = texture_map::TextureMap::new();
+    let texture_map = texture_map::TextureMap::new();
 
     let scn_str =
         std::fs::read_to_string("cfg.ron").expect("Could not read configuration file 'cfg.ron'");
@@ -103,14 +103,6 @@ pub fn main() -> std::result::Result<(), String> {
     let mut app = app::App::new(scene, texture_map);
 
     app.run()?;
-
-    use thruster::acceleration::bvh::*;
-    //let accel = BVHAccel::new(BVHConstructionAlgorithm::Normal, scene.shapes.clone());
-    //let (total, node) = accel.construct().expect("Could not construct BVHTree");
-    //let flat_bvh = accel.flatten(Box::new(node), total);
-    //println!("Primitives:     {}", flat_bvh.primitives.len());
-    //println!("Expected Nodes: {}", flat_bvh.primitives.len() * 2 - 1);
-    //println!("Actual Nodes:   {}", flat_bvh.linear_nodes.len());
 
     //texture_map.preload_all_in_scene(&scene);
     //scene.screenshot("screenshot.png", 640.0, 480.0, &texture_map);

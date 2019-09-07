@@ -1,7 +1,7 @@
 use std::time::SystemTime;
 
 use crate::acceleration::bvh::{BVHAccel, BVHConstructionAlgorithm, BVHLinearTree};
-use crate::algebra::Vec3;
+use crate::algebra::prelude::*;
 use crate::camera::{Camera, PerspectiveCamera};
 use crate::dither;
 use crate::image::{ImageBuffer, Rgba};
@@ -45,9 +45,9 @@ impl Scene {
             bvh: flat_bvh,
             lights: self.lights.clone(),
             skybox: self.skybox.clone(),
-            texture_map: texture_map,
-            camera: self.camera.clone(),
-            config: self.config.clone(),
+            texture_map,
+            camera: self.camera,
+            config: self.config,
         }
     }
 
