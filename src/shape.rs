@@ -128,12 +128,8 @@ pub trait SceneObject {
 
 impl Ray {
     /// Use the [BVHTree](../bvh/struct.BVHTree.html) to find the nearest intersection
-    pub fn cast<'a>(&self, scene: &'a RenderData) -> Vec<(Intersection, &'a Shape)> {
-        if let Some(is) = scene.bvh.intersect(self) {
-            vec![is]
-        } else {
-            Vec::new()
-        }
+    pub fn cast<'a>(&self, scene: &'a RenderData) -> Option<(Intersection, &'a Shape)> {
+        scene.bvh.intersect(self)
     }
 
     /// The color function of a Ray, allows it to generate coloring for a Ray trace.
@@ -142,18 +138,12 @@ impl Ray {
     /// complicated due to the complex nature of the equation.
     pub fn color_function<'a>(
         &self,
-        intersections: Vec<(Intersection, &Shape)>,
+        closest: Option<(Intersection, &Shape)>,
         scene: &RenderData,
     ) -> Option<Vec3> {
         let mut rng = rand::thread_rng();
-        let mut closest = intersections.first()?;
-        for intersection in intersections.iter() {
-            if closest.0.t > intersection.0.t {
-                closest = intersection;
-            }
-        }
-        let inter = &closest.0;
-        let mat = closest.1.mat();
+        let (inter, shape) = closest?;
+        let mat = shape.mat();
         let orig_color = match &mat.texture {
             MatTex::Color(col) => *col,
             MatTex::Texture { handle, scaling } => {

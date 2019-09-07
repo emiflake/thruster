@@ -75,16 +75,7 @@ impl BoundingBox {
             tmax = tzmax;
         }
 
-        let mut t = tmin;
-
-        if t < 0.0 {
-            t = tmax;
-            if t < 0.0 {
-                return false;
-            }
-        }
-
-        true
+        tmin >= 0.0 || tmax >= 0.0
     }
 
     /// Get the diagonal vector from min to max

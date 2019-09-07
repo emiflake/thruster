@@ -36,7 +36,7 @@ pub struct RenderData<'a> {
 }
 
 impl Scene {
-    fn compute_render_data<'a>(&self, texture_map: &'a TextureMap) -> RenderData<'a> {
+    pub fn compute_render_data<'a>(&self, texture_map: &'a TextureMap) -> RenderData<'a> {
         let mut accel = BVHAccel::new(BVHConstructionAlgorithm::SAH, self.shapes.clone());
         let (total, node) = accel.construct().expect("Could not construct BVHTree");
         let flat_bvh = accel.flatten(Box::new(node), total);

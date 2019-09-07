@@ -226,11 +226,11 @@ impl Vec3 {
 
     /// Extract a dimension from a Vector by it's number 0-2
     pub fn dim(self, dimension: u32) -> f64 {
-        match dimension % 3 {
+        match dimension {
             0 => self.x,
             1 => self.y,
             2 => self.z,
-            _ => self.x,
+            _ => panic!("Dimension greater than 2"),
         }
     }
 
@@ -265,6 +265,26 @@ impl Vec3 {
                 self.z,
             ),
             _ => self.rotate_around(0, theta),
+        }
+    }
+
+    pub fn max_component(self) -> f64 {
+        if self.x > self.y && self.x > self.z {
+            self.x
+        } else if self.y > self.z {
+            self.y
+        } else {
+            self.z
+        }
+    }
+
+    pub fn min_component(self) -> f64 {
+        if self.x < self.y && self.x < self.z {
+            self.x
+        } else if self.y < self.z {
+            self.y
+        } else {
+            self.z
         }
     }
 }

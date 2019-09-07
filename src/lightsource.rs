@@ -54,13 +54,14 @@ impl Light for PointLight {
                     (rng.gen::<f64>() - 0.5) * blurriness,
                 ));
             if scene.config.shadows {
-                let ray = Ray::new(
+                if Ray::new(
                     intersection.origin + intersection.normal * 0.001,
                     light_ray,
                     0,
-                );
-                let intersections = ray.cast(&scene);
-                if intersections.len() > 0 {
+                )
+                .cast(&scene)
+                .is_some()
+                {
                     continue 'sample_loop;
                 }
             }

@@ -6,6 +6,7 @@
 // most performance tweaking.
 
 use crate::acceleration::bounds::BoundingBox;
+use crate::acceleration::queue_systems::FastStack;
 use crate::algebra::Vec3;
 use crate::shape::{Intersection, Ray, SceneObject, Shape};
 use crate::utils;
@@ -39,7 +40,7 @@ impl Default for BucketInfo {
 #[derive(Clone, Copy)]
 pub enum BVHConstructionAlgorithm {
     /// Basic and primitive way
-    Normal,
+    Middle,
     /// Split into Equal counts
     Equal,
     /// Surface Area Heuristic: One of the better systems for constructing optimal BVH trees. It
@@ -56,33 +57,24 @@ impl BVHConstructionAlgorithm {
         centroid_bounds: &BoundingBox,
     ) -> Option<usize> {
         match self {
-            BVHConstructionAlgorithm::Normal => {
-                unimplemented!("This function has a bug, so is unimplemented");
-                /*
-                // Default = Midpoint
+            BVHConstructionAlgorithm::Middle => {
+                let len = primitive_info.len();
                 let pmid = (centroid_bounds.min_vector.dim(dimension)
                     + centroid_bounds.max_vector.dim(dimension))
                     / 2.0;
-                let i = utils::partition(&mut primitive_info[start..end], |pi| {
-                    pi.centre.dim(dimension) < pmid
-                });
-                middle = i;
-                if i == start || i == end {
-                    use std::cmp::Ordering;
-                    middle = (start + end) / 2;
-                    pdqselect::select_by(
-                        &mut primitive_info[start..end],
-                        middle,
-                        |pa, pb| {
-                            if pa.centre.dim(dimension) > pb.centre.dim(dimension) {
-                                Ordering::Greater
-                            } else {
-                                Ordering::Less
-                            }
-                        },
-                    );
+                let mut middle =
+                    utils::partition(primitive_info, |pi| pi.centre.dim(dimension) < pmid);
+                if middle == 0 || middle == len {
+                    middle = len / 2;
+                    pdqselect::select_by(primitive_info, middle, |pa, pb| {
+                        if pa.centre.dim(dimension) > pb.centre.dim(dimension) {
+                            Ordering::Greater
+                        } else {
+                            Ordering::Less
+                        }
+                    });
                 }
-                */
+                Some(middle)
             }
             BVHConstructionAlgorithm::Equal => {
                 let middle = primitive_info.len() / 2;
@@ -95,10 +87,13 @@ impl BVHConstructionAlgorithm {
                 });
                 Some(middle)
             }
+            // Surface-area Heuristic splitting method works
+            // by finding the best possible place on an axis
+            // to split the primitives.
             BVHConstructionAlgorithm::SAH => {
                 let len = primitive_info.len();
                 if len <= 4 {
-                    let middle = primitive_info.len() / 2;
+                    let middle = len / 2;
                     pdqselect::select_by(primitive_info, middle, |pa, pb| {
                         if pa.centre.dim(dimension) > pb.centre.dim(dimension) {
                             Ordering::Greater
@@ -114,7 +109,7 @@ impl BVHConstructionAlgorithm {
                         let b = (f64::from(bucket_amount as u32)
                             * centroid_bounds.offset(&info.centre).dim(dimension))
                             as usize;
-                        let b = if b >= bucket_amount {
+                        let b = if b == bucket_amount {
                             bucket_amount - 1
                         } else {
                             b
@@ -123,11 +118,18 @@ impl BVHConstructionAlgorithm {
                         buckets[b].count += 1;
                         buckets[b].bounding_box = buckets[b].bounding_box.merge(&info.bounding_box);
                     }
+                    //println!(
+                    //"Counts: {:?}",
+                    //buckets
+                    //.iter()
+                    //.map(|bucket| bucket.count)
+                    //.collect::<Vec<usize>>()
+                    //);
 
                     let mut cost = vec![0.0; bucket_amount - 1];
                     for bucket_n in 0..bucket_amount - 1 {
-                        let mut bounds_a = BoundingBox::EMPTY;
-                        let mut bounds_b = BoundingBox::EMPTY;
+                        let mut bounds_a = buckets[0].bounding_box.clone();
+                        let mut bounds_b = buckets[bucket_n + 1].bounding_box.clone();
                         let mut count_a = 0;
                         let mut count_b = 0;
                         for j in 0..bucket_n {
@@ -138,6 +140,12 @@ impl BVHConstructionAlgorithm {
                             bounds_b = bounds_b.merge(&buckets[j].bounding_box);
                             count_b += buckets[j].count;
                         }
+                        //println!("Counts   : [{} A] - [{} B]", count_a, count_b);
+                        //println!(
+                        //"Bounds_SA: [{} A] - [{} B]",
+                        //bounds_a.surface_area(),
+                        //bounds_b.surface_area()
+                        //);
                         cost[bucket_n] = 0.125
                             + (f64::from(count_a as u32) * bounds_a.surface_area()
                                 + f64::from(count_b as u32) * bounds_b.surface_area())
@@ -150,18 +158,11 @@ impl BVHConstructionAlgorithm {
                             minimum = (cost[i], i);
                         }
                     }
-                    //println!("Best bucket for dim {}: {:?}", dimension, minimum);
-                    //println!(
-                    //"All buckets {:#?}",
-                    //buckets
-                    //.iter()
-                    //.enumerate()
-                    //.map(|(i, b)| (cost.get(i), b.count))
-                    //.collect::<Vec<(Option<&f64>, usize)>>()
-                    //);
+                    //println!("Chosen cost: {:?}", minimum);
+                    //println!("Costs      : {:?}", cost);
 
                     let leaf_cost = len;
-                    if leaf_cost > 1 || minimum.0 < f64::from(leaf_cost as u32) {
+                    if leaf_cost > 16 || minimum.0 < f64::from(leaf_cost as u32) {
                         let middle = utils::partition(primitive_info, |pi: &BVHPrimitiveInfo| {
                             let b = (f64::from(bucket_amount as u32)
                                 * centroid_bounds.offset(&pi.centre).dim(dimension))
@@ -279,13 +280,10 @@ impl BVHAccel {
     ) -> BVHBuildNode {
         assert!(primitive_info.len() > 0);
         *total_nodes += 1;
-        let aggregate_bounds: BoundingBox = primitive_info
-            .iter()
-            .fold(None, |acc: Option<BoundingBox>, b| match acc {
-                Some(a) => Some(a.merge(&b.bounding_box)),
-                None => Some(b.bounding_box.clone()),
-            })
-            .unwrap();
+        let aggregate_bounds: BoundingBox = primitive_info.iter().fold(
+            BoundingBox::EMPTY,
+            |acc: BoundingBox, b: &BVHPrimitiveInfo| acc.merge(&b.bounding_box),
+        );
 
         let len = primitive_info.len();
         if len == 1 {
@@ -317,6 +315,7 @@ impl BVHAccel {
                     &aggregate_bounds,
                     &centroid_bounds,
                 ) {
+                    //println!("0 - {} - {}", middle, len);
                     BVHBuildNode::new_branch(
                         dimension,
                         Box::new(self.recursive_build(
@@ -411,18 +410,15 @@ impl BVHLinearTree {
     }
 
     pub fn intersect(&self, ray: &Ray) -> Option<(Intersection, &Shape)> {
-        if self.linear_nodes.len() == 0 {
-            return None;
-        }
         let mut current_task = 0;
-        let mut queue: Vec<usize> = Vec::with_capacity(64);
+        let mut queue = FastStack::new();
         let mut closest: Option<(Intersection, &Shape)> = None;
-        'node_search: loop {
-            let n = self.linear_nodes.get(current_task).unwrap();
+        loop {
+            let n = &self.linear_nodes[current_task];
             if n.bounding_box.intersects_with(ray) {
                 if n.primitive_amount > 0 {
                     for i in 0..n.primitive_amount {
-                        let prim = self.primitives.get(i + n.node_content).unwrap();
+                        let prim = &self.primitives[i + n.node_content];
                         if let Some(intersection) = prim.do_intersect(ray) {
                             closest = match closest {
                                 Some(i) => {
@@ -438,7 +434,7 @@ impl BVHLinearTree {
                     }
                     match queue.pop() {
                         None => return closest,
-                        Some(idx) => current_task = idx,
+                        Some(task) => current_task = task,
                     };
                 } else {
                     if ray.inv_dir.dim(n.axis) < 0.0 {
@@ -452,7 +448,7 @@ impl BVHLinearTree {
             } else {
                 match queue.pop() {
                     None => return closest,
-                    Some(idx) => current_task = idx,
+                    Some(task) => current_task = task,
                 };
             }
         }
