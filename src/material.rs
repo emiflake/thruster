@@ -1,4 +1,4 @@
-use crate::algebra::{Vec2, Vec3};
+use crate::algebra::prelude::*;
 
 use serde_derive::{Deserialize, Serialize};
 

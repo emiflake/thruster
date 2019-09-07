@@ -10,7 +10,7 @@ use imgui::Context;
 use imgui::*;
 use imgui_winit_support::{HiDpiMode, WinitPlatform};
 
-use crate::algebra::Vec3;
+use crate::algebra::prelude::*;
 
 use std::thread;
 #[allow(unused_imports)]
@@ -69,12 +69,12 @@ impl App {
                 platform.handle_event(imgui.io_mut(), &window, &event);
                 keystate.handle_event(&event);
 
-                match event {
-                    glutin::Event::WindowEvent { event, .. } => match event {
-                        glutin::WindowEvent::CloseRequested => closed = true,
-                        _ => (),
-                    },
-                    _ => (),
+                if let glutin::Event::WindowEvent {
+                    event: glutin::WindowEvent::CloseRequested,
+                    ..
+                } = event
+                {
+                    closed = true;
                 }
             });
 
@@ -151,7 +151,7 @@ impl App {
                 closed = true;
             }
 
-            handle_keys(&keystate, &mut self.scene, delta_time as f64);
+            handle_keys(&keystate, &mut self.scene, f64::from(delta_time));
 
             let image = self.scene.new_render(640.0, 360.0, &self.texture_map);
             let image_dimensions = image.dimensions();

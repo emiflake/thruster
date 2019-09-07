@@ -1,6 +1,6 @@
 #![allow(unused_variables)]
 
-use thruster::algebra::{Vec2, Vec3, Vertex};
+use thruster::algebra::prelude::*;
 use thruster::app;
 use thruster::material::{MatTex, Material, Reflectivity, Transparency};
 use thruster::parser;
@@ -9,13 +9,14 @@ use thruster::shape::{Shape, Triangle};
 use thruster::texture_map;
 
 pub fn main() -> std::result::Result<(), String> {
-    let mut texture_map = texture_map::TextureMap::new();
+    let texture_map = texture_map::TextureMap::new();
 
     let scn_str =
         std::fs::read_to_string("cfg.ron").expect("Could not read configuration file 'cfg.ron'");
     let mut scene: Scene = ron::de::from_str(&scn_str).expect("Could not parse 'cfg.ron'");
 
-    let obj = parser::parse("./objs/codam-text-low.obj".to_string()).expect("Could not parse .obj");
+    let obj =
+        parser::parse("./objs/codam-text-high.obj".to_string()).expect("Could not parse .obj");
     for (a, b, c) in obj.tris.iter() {
         let a = Vertex {
             origin: a.origin.rotate_around(0, std::f64::consts::FRAC_PI_2)
@@ -57,7 +58,7 @@ pub fn main() -> std::result::Result<(), String> {
         }))
     }
     let obj =
-        parser::parse("./objs/codam-stripes-low.obj".to_string()).expect("Could not parse .obj");
+        parser::parse("./objs/codam-stripes-high.obj".to_string()).expect("Could not parse .obj");
     for (a, b, c) in obj.tris.iter() {
         let a = Vertex {
             origin: a.origin.rotate_around(0, std::f64::consts::FRAC_PI_2),
@@ -104,6 +105,6 @@ pub fn main() -> std::result::Result<(), String> {
     app.run()?;
 
     //texture_map.preload_all_in_scene(&scene);
-    //scene.screenshot("screenshot.png", 3840.0, 2160.0, &texture_map);
+    //scene.screenshot("screenshot.png", 640.0, 480.0, &texture_map);
     Ok(())
 }

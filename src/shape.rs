@@ -1,4 +1,4 @@
-use crate::algebra::{Vec2, Vec3, Vertex};
+use crate::algebra::prelude::*;
 use crate::lightsource::Light;
 use crate::material::{MatTex, Material};
 use crate::scene::RenderData;
@@ -107,76 +107,6 @@ pub struct Intersection {
     pub text_pos: Vec2,
 }
 
-/// A Bounding Box to represent the maximum range of an object, this is useful for Ray intersection
-/// checking since it will guarantee that any Ray that can intersect the object, will also
-/// intersect with this BoundingBox. Shapes must implement a function that generates this
-/// BoundingBox such that they can in general be optimized with the
-/// [BVHTree](../bvh/struct.BVHTree.html)
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BoundingBox {
-    /// The vector containing the low values of the bounding box
-    pub min_vector: Vec3,
-    /// The vector containing the high values of the bounding box
-    pub max_vector: Vec3,
-}
-
-impl BoundingBox {
-    fn bounds(&self, sign: f64) -> Vec3 {
-        if sign == 1.0 {
-            self.min_vector
-        } else {
-            self.max_vector
-        }
-    }
-
-    pub fn centre(&self) -> Vec3 {
-        (self.min_vector + self.max_vector) / 2.0
-    }
-
-    pub fn intersects_with(&self, ray: &Ray) -> bool {
-        let mut tmin = (self.bounds(ray.sign.x).x - ray.origin.x) * ray.inv_dir.x;
-        let mut tmax = (self.bounds(1.0 - ray.sign.x).x - ray.origin.x) * ray.inv_dir.x;
-        let tymin = (self.bounds(ray.sign.y).y - ray.origin.y) * ray.inv_dir.y;
-        let tymax = (self.bounds(1.0 - ray.sign.y).y - ray.origin.y) * ray.inv_dir.y;
-
-        if (tmin > tymax) || (tymin > tmax) {
-            return false;
-        }
-
-        if tymin > tmin {
-            tmin = tymin;
-        }
-        if tymax < tmax {
-            tmax = tymax;
-        }
-
-        let tzmin = (self.bounds(ray.sign.z).z - ray.origin.z) * ray.inv_dir.z;
-        let tzmax = (self.bounds(1.0 - ray.sign.z).z - ray.origin.z) * ray.inv_dir.z;
-
-        if (tmin > tzmax) || (tzmin > tmax) {
-            return false;
-        }
-
-        if tzmin > tmin {
-            tmin = tzmin;
-        }
-        if tzmax < tmax {
-            tmax = tzmax;
-        }
-
-        let mut t = tmin;
-
-        if t < 0.0 {
-            t = tmax;
-            if t < 0.0 {
-                return false;
-            }
-        }
-
-        true
-    }
-}
-
 /// This trait describes what an object must be able to do in order to fit in our scene.
 pub trait SceneObject {
     /// Get the material ref as a mutable
@@ -197,32 +127,22 @@ pub trait SceneObject {
 
 impl Ray {
     /// Use the [BVHTree](../bvh/struct.BVHTree.html) to find the nearest intersection
-    pub fn cast<'a>(&self, scene: &'a RenderData) -> Vec<(Intersection, &'a Shape)> {
-        if let Some(is) = scene.bvh.intersect(self) {
-            vec![is]
-        } else {
-            Vec::new()
-        }
+    pub fn cast<'a>(&self, scene: &'a RenderData) -> Option<(Intersection, &'a Shape)> {
+        scene.bvh.intersect(self)
     }
 
     /// The color function of a Ray, allows it to generate coloring for a Ray trace.
     ///
     /// **TODO:** Allow simplify this function in some way, possibly by abstracting, this is
     /// complicated due to the complex nature of the equation.
-    pub fn color_function<'a>(
+    pub fn color_function(
         &self,
-        intersections: Vec<(Intersection, &Shape)>,
+        closest: Option<(Intersection, &Shape)>,
         scene: &RenderData,
     ) -> Option<Vec3> {
         let mut rng = rand::thread_rng();
-        let mut closest = intersections.first()?;
-        for intersection in intersections.iter() {
-            if closest.0.t > intersection.0.t {
-                closest = intersection;
-            }
-        }
-        let inter = &closest.0;
-        let mat = closest.1.mat();
+        let (inter, shape) = closest?;
+        let mat = shape.mat();
         let orig_color = match &mat.texture {
             MatTex::Color(col) => *col,
             MatTex::Texture { handle, scaling } => {
@@ -474,7 +394,7 @@ impl SceneObject for Plane {
     }
 
     fn bounding_box(&self) -> BoundingBox {
-        let far = Vec3::new(100000.0, 100000.0, 100000.0);
+        let far = Vec3::new(100_000.0, 100_000.0, 100_000.0);
 
         BoundingBox {
             min_vector: self.origin - far + self.normal * far,

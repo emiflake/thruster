@@ -31,7 +31,11 @@ impl Profiler {
             .size([400.0, 150.0], Condition::FirstUseEver)
             .position([50.0, 350.0], Condition::FirstUseEver)
             .build(|| {
-                ui.text(format!("FPS: {:.2}/{:.5}ms", 1.0 / delta_time, delta_time));
+                ui.text(format!(
+                    "FPS: {:.2}/{:.5}ms",
+                    1.0 / delta_time,
+                    delta_time * 1000.0
+                ));
                 ui.slider_int(im_str!("View window"), &mut self.view_window, 10, 1000)
                     .build();
 

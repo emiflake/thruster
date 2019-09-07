@@ -9,7 +9,7 @@ impl Denoiser {
             for x in 0..image.width() {
                 let p = image.get_pixel(x, y);
                 for c in 0..3 {
-                    vec[3 * ((y * image.width() + x) as usize) + c] = p[c] as f32 / 255.0;
+                    vec[3 * ((y * image.width() + x) as usize) + c] = f32::from(p[c]) / 255.0;
                 }
             }
         }

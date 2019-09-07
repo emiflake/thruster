@@ -1,7 +1,7 @@
 use std::time::SystemTime;
 
-use crate::algebra::Vec3;
-use crate::bvh::BVHTree;
+use crate::acceleration::bvh::{BVHAccel, BVHConstructionAlgorithm, BVHLinearTree};
+use crate::algebra::prelude::*;
 use crate::camera::{Camera, PerspectiveCamera};
 use crate::dither;
 use crate::image::{ImageBuffer, Rgba};
@@ -27,7 +27,7 @@ pub struct Scene {
 
 /// Represents the required information to trace the rays.
 pub struct RenderData<'a> {
-    pub bvh: BVHTree,
+    pub bvh: BVHLinearTree,
     pub lights: Vec<Lightsource>,
     pub skybox: Skybox,
     pub texture_map: &'a TextureMap,
@@ -36,15 +36,18 @@ pub struct RenderData<'a> {
 }
 
 impl Scene {
-    fn compute_render_data<'a>(&self, texture_map: &'a TextureMap) -> RenderData<'a> {
+    pub fn compute_render_data<'a>(&self, texture_map: &'a TextureMap) -> RenderData<'a> {
+        let mut accel = BVHAccel::new(BVHConstructionAlgorithm::SAH, self.shapes.clone());
+        let (total, node) = accel.construct().expect("Could not construct BVHTree");
+        let flat_bvh = accel.flatten(Box::new(node), total);
+
         RenderData {
-            bvh: BVHTree::construct(&self.shapes)
-                .expect("Could not construct RenderData from Scene"),
+            bvh: flat_bvh,
             lights: self.lights.clone(),
             skybox: self.skybox.clone(),
-            texture_map: texture_map,
-            camera: self.camera.clone(),
-            config: self.config.clone(),
+            texture_map,
+            camera: self.camera,
+            config: self.config,
         }
     }
 
@@ -99,7 +102,7 @@ impl RenderData<'_> {
         if self.config.multi_thread {
             let mut pool = Pool::new(12);
             pool.scoped(|scoped| {
-                for (_, row) in buf.enumerate_rows_mut() {
+                for (i, row) in buf.enumerate_rows_mut() {
                     scoped.execute(move || {
                         for (x, y, pix) in row {
                             let mut col = Vec3::ORIGIN;
@@ -129,7 +132,7 @@ impl RenderData<'_> {
                 }
             });
         } else {
-            for (_, row) in buf.enumerate_rows_mut() {
+            for (i, row) in buf.enumerate_rows_mut() {
                 for (x, y, pix) in row {
                     let mut col = Vec3::ORIGIN;
                     let rays =

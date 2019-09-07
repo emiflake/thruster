@@ -20,8 +20,8 @@ impl Keystate {
     }
 
     pub fn handle_event(&mut self, event: &glutin::Event) {
-        if let glutin::Event::WindowEvent { event, .. } = event {
-            match event {
+        if let glutin::Event::WindowEvent {
+            event:
                 glutin::WindowEvent::KeyboardInput {
                     input:
                         glutin::KeyboardInput {
@@ -30,12 +30,14 @@ impl Keystate {
                             ..
                         },
                     ..
-                } => match state {
-                    ElementState::Pressed => self.set_key_down(*kc),
-                    ElementState::Released => self.set_key_up(*kc),
                 },
-                _ => {}
-            }
+            ..
+        } = event
+        {
+            match state {
+                ElementState::Pressed => self.set_key_down(*kc),
+                ElementState::Released => self.set_key_up(*kc),
+            };
         }
     }
 }

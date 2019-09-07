@@ -7,25 +7,22 @@ use crate::material::MatTex;
 use crate::scene::Scene;
 use crate::shape::SceneObject;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct TextureMap {
     pub textures: HashMap<String, image::RgbImage>,
 }
 
 impl TextureMap {
     pub fn new() -> Self {
-        TextureMap {
-            textures: HashMap::new(),
-        }
+        Self::default()
     }
 
     pub fn preload_all_in_scene(&mut self, scene: &Scene) {
         let mut paths: Vec<String> = Vec::new();
 
         for shape in &scene.shapes {
-            match &shape.mat().texture {
-                MatTex::Texture { handle, .. } => paths.push(handle.clone()),
-                _ => {}
+            if let MatTex::Texture { handle, .. } = &shape.mat().texture {
+                paths.push(handle.clone());
             }
         }
 
@@ -35,7 +32,7 @@ impl TextureMap {
 
         for path in &paths {
             self.load_image_from_file(path)
-                .expect(&format!("Failed to load {} while preloading", path));
+                .unwrap_or_else(|_| panic!("Failed to load {} while preloading", path));
         }
     }
 
