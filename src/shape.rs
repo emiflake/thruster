@@ -89,7 +89,7 @@ impl SceneObject for Sphere {
 
     fn do_intersect(&self, ray: &Ray) -> Option<Intersection> {
         let local_ray = self.origin - ray.origin;
-        let tca = local_ray.dot(&ray.direction);
+        let tca = comb::dot(&local_ray, &ray.direction);
         if tca < 0.0 {
             return None;
         }
@@ -172,7 +172,8 @@ impl SceneObject for Plane {
     }
 
     fn do_intersect(&self, ray: &Ray) -> Option<Intersection> {
-        let t = (self.origin - ray.origin).dot(&self.normal) / (self.normal.dot(&ray.direction));
+        let t = comb::dot(&(self.origin - ray.origin), &self.normal)
+            / comb::dot(&self.normal, &ray.direction);
         if t < 0.001 {
             None
         } else {
@@ -243,8 +244,8 @@ impl SceneObject for Triangle {
         let ab = self.b.origin - self.a.origin;
         let ac = self.c.origin - self.a.origin;
 
-        let pvec = ray.direction.cross_product(&ac);
-        let det = ab.dot(&pvec);
+        let pvec = comb::cross(&ray.direction, &ac);
+        let det = comb::dot(&ab, &pvec);
 
         // TODO: Disable backface culling in config
         //if det < std::f64::EPSILON {
@@ -255,16 +256,16 @@ impl SceneObject for Triangle {
         }
         let inv_det = 1.0 / det;
         let tvec = ray.origin - self.a.origin;
-        let u = tvec.dot(&pvec) * inv_det;
+        let u = comb::dot(&tvec, &pvec) * inv_det;
         if u < 0.0 || u > 1.0 {
             return None;
         }
-        let qvec = tvec.cross_product(&ab);
-        let v = ray.direction.dot(&qvec) * inv_det;
+        let qvec = comb::cross(&tvec, &ab);
+        let v = comb::dot(&ray.direction, &qvec) * inv_det;
         if v < 0.0 || u + v > 1.0 {
             return None;
         }
-        let t = ac.dot(&qvec) * inv_det;
+        let t = comb::dot(&ac, &qvec) * inv_det;
         if t < 0.0 {
             return None;
         }

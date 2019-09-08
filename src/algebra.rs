@@ -20,3 +20,9 @@ pub mod matrix;
 
 /// Transforms
 pub mod transform;
+
+/// Surface normals
+pub mod normal;
+
+/// Combinators on various different types
+pub mod combinators;

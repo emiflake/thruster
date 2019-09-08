@@ -1,6 +1,6 @@
 use crate::algebra::prelude::*;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Point2 {
     pub x: f64,
     pub y: f64,
@@ -43,7 +43,7 @@ impl From<Vec2> for Point2 {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Point3 {
     pub x: f64,
     pub y: f64,
@@ -51,6 +51,8 @@ pub struct Point3 {
 }
 
 impl Point3 {
+    pub const ORIGIN: Self = Self::new(0.0, 0.0, 0.0);
+
     pub const fn new(x: f64, y: f64, z: f64) -> Self {
         Self { x, y, z }
     }
@@ -96,6 +98,20 @@ impl std::ops::Mul<Point3> for Point3 {
     }
 }
 
+impl std::ops::Mul<f64> for Point3 {
+    type Output = Point3;
+    fn mul(self, rhs: f64) -> Self {
+        Self::new(self.x * rhs, self.y * rhs, self.z * rhs)
+    }
+}
+
+impl std::ops::Div<f64> for Point3 {
+    type Output = Point3;
+    fn div(self, rhs: f64) -> Self {
+        Self::new(self.x / rhs, self.y / rhs, self.z / rhs)
+    }
+}
+
 impl std::ops::Add<Vec3> for Point3 {
     type Output = Point3;
     fn add(self, rhs: Vec3) -> Self {
@@ -138,5 +154,58 @@ impl std::ops::MulAssign<Vec3> for Point3 {
         self.x *= rhs.x;
         self.y *= rhs.y;
         self.z *= rhs.z;
+    }
+}
+
+impl std::ops::Index<usize> for Point3 {
+    type Output = f64;
+    fn index(&self, i: usize) -> &Self::Output {
+        match i {
+            0 => &self.x,
+            1 => &self.y,
+            2 => &self.z,
+            _ => panic!("Dimension {} invalid while indexing 3D type", i),
+        }
+    }
+}
+
+impl std::ops::IndexMut<usize> for Point3 {
+    fn index_mut(&mut self, i: usize) -> &mut Self::Output {
+        match i {
+            0 => &mut self.x,
+            1 => &mut self.y,
+            2 => &mut self.z,
+            _ => panic!("Dimension {} invalid while indexing 3D type", i),
+        }
+    }
+}
+
+impl Transformable for Point3 {
+    fn apply_t(&self, trans: &Transform) -> Self {
+        let Self { x, y, z } = self;
+        let m = &trans.mat;
+        let xp = m.at(0, 0) * x + m.at(0, 1) * y + m.at(0, 2) * z + m.at(0, 3);
+        let yp = m.at(1, 0) * x + m.at(1, 1) * y + m.at(1, 2) * z + m.at(1, 3);
+        let zp = m.at(2, 0) * x + m.at(2, 1) * y + m.at(2, 2) * z + m.at(2, 3);
+        let wp = m.at(3, 0) * x + m.at(3, 1) * y + m.at(3, 2) * z + m.at(3, 3);
+        if wp == 1.0 {
+            Self::new(xp, yp, zp)
+        } else {
+            Self::new(xp, yp, zp) / wp
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn transform() {
+        let my_point = Point3::ORIGIN;
+        let translation = Transform::translation(&Vec3::new(0.0, 1.0, 0.0));
+
+        let translated = my_point.apply_t(&translation);
+        assert_eq!(my_point + Vec3::new(0.0, 1.0, 0.0), translated);
     }
 }

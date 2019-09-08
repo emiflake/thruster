@@ -64,7 +64,7 @@ impl Light for PointLight {
                 continue 'sample_loop;
             }
 
-            let dot = intersection.normal.dot(&light_ray);
+            let dot = comb::dot(&intersection.normal, &light_ray);
             if dot >= 0.0 {
                 amt += dot / f64::from(spp);
             }

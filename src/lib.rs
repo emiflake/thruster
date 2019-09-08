@@ -34,6 +34,7 @@ pub mod denoise;
 pub mod dither;
 pub mod key_state;
 pub mod lightsource;
+pub mod logger;
 pub mod material;
 pub mod parser;
 pub mod profiler;

@@ -29,6 +29,18 @@ pub struct Vec3 {
     pub z: f64,
 }
 
+impl From<Point3> for Vec3 {
+    fn from(v: Point3) -> Self {
+        Self::new(v.x, v.y, v.z)
+    }
+}
+
+impl From<Normal> for Vec3 {
+    fn from(p: Normal) -> Self {
+        Self::new(p.x, p.y, p.z)
+    }
+}
+
 impl std::ops::Sub<Vec3> for Vec3 {
     type Output = Vec3;
     fn sub(self, rhs: Vec3) -> Vec3 {
@@ -75,12 +87,6 @@ impl std::ops::Neg for Vec3 {
     type Output = Vec3;
     fn neg(self) -> Vec3 {
         Vec3::new(-self.x, -self.y, -self.z)
-    }
-}
-
-impl From<Point3> for Vec3 {
-    fn from(p: Point3) -> Self {
-        Self::new(p.x, p.y, p.z)
     }
 }
 
@@ -136,12 +142,6 @@ impl Vec3 {
         self.length2().sqrt()
     }
 
-    /// The dot product between two Vectors
-    /// Represents the 'difference' in angle.
-    pub fn dot(&self, rhs: &Vec3) -> f64 {
-        self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
-    }
-
     /// Normalize the Vector towards a unit Vector.
     /// This is achieved by dividing the Vector's elements by its length
     pub fn normalized(&self) -> Self {
@@ -164,15 +164,6 @@ impl Vec3 {
     /// Clamp the Vector's values to [0.0, 255.0]
     pub fn clamp_as_color(&self) -> Self {
         self.clamp_to(Vec3::ORIGIN, Vec3::new(255.0, 255.0, 255.0))
-    }
-
-    /// The cross product between two vectors
-    pub fn cross_product(&self, other: &Vec3) -> Vec3 {
-        Vec3::new(
-            self.y * other.z - self.z * other.y,
-            self.z * other.x - self.x * other.z,
-            self.x * other.y - self.y * other.x,
-        )
     }
 
     /// Map a function over each of the Vector's values
@@ -348,17 +339,6 @@ mod tests {
     }
 
     #[test]
-    fn dot_product() {
-        assert_eq!(Vec3::new(1.0, 5.0, 3.0).dot(&Vec3::new(2.0, 0.0, 0.0)), 2.0);
-        assert_eq!(Vec3::new(0.0, 1.0, 0.0).dot(&Vec3::new(0.0, 1.0, 0.0)), 1.0);
-        assert_eq!(Vec3::new(0.0, 0.0, 1.0).dot(&Vec3::new(0.0, 1.0, 0.0)), 0.0);
-        assert_eq!(
-            Vec3::new(0.0, -1.0, 0.0).dot(&Vec3::new(0.0, 1.0, 0.0)),
-            -1.0
-        );
-    }
-
-    #[test]
     fn length2() {
         assert_eq!(Vec3::new(0.0, 0.0, 0.0).length2(), 0.0);
         assert_eq!(Vec3::new(5.0, 3.0, 0.0).length2(), 25.0 + 9.0);
@@ -433,4 +413,27 @@ mod tests {
         assert_eq!(a.dim(2), 1.0);
     }
 
+}
+
+impl std::ops::Index<usize> for Vec3 {
+    type Output = f64;
+    fn index(&self, i: usize) -> &Self::Output {
+        match i {
+            0 => &self.x,
+            1 => &self.y,
+            2 => &self.z,
+            _ => panic!("Dimension {} invalid while indexing 3D type", i),
+        }
+    }
+}
+
+impl std::ops::IndexMut<usize> for Vec3 {
+    fn index_mut(&mut self, i: usize) -> &mut Self::Output {
+        match i {
+            0 => &mut self.x,
+            1 => &mut self.y,
+            2 => &mut self.z,
+            _ => panic!("Dimension {} invalid while indexing 3D type", i),
+        }
+    }
 }

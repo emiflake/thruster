@@ -82,7 +82,7 @@ impl Ray {
             diff_color = diff_color
                 + orig_color * (light.color() / 255.0) * light.luminosity_at(scene, &inter);
         }
-        let n_dot_d = inter.normal.dot(&self.direction);
+        let n_dot_d = comb::dot(&inter.normal, &self.direction);
         let refr_color = {
             if self.level <= 0 || !mat.transparency.is_transparent() || !scene.config.refractions {
                 Vec3::ORIGIN

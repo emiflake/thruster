@@ -1,8 +1,8 @@
 use crate::algebra::prelude::*;
 
 pub struct Transform {
-    mat: Mat4x4,
-    inv_mat: Mat4x4,
+    pub mat: Mat4x4,
+    pub inv_mat: Mat4x4,
 }
 
 impl Transform {
@@ -113,8 +113,8 @@ impl Transform {
 
     pub fn look_at(pos: &Vec3, look: &Vec3, up: &Vec3) -> Self {
         let dir = (*look - *pos).normalized();
-        let right = up.normalized().cross_product(&dir).normalized();
-        let new_up = dir.cross_product(&right);
+        let right = comb::cross(&up.normalized(), &dir.normalized());
+        let new_up = comb::cross(&dir, &right);
         let mat = Mat4x4::new([
             right.x, new_up.x, dir.x, pos.x, //
             right.y, new_up.y, dir.y, pos.y, //
@@ -123,5 +123,37 @@ impl Transform {
         ]);
         let inv_mat = mat.clone().inverse();
         Transform::new(inv_mat, mat)
+    }
+
+    pub fn compose(self, rhs: Self) -> Self {
+        Self::new(self.mat * rhs.mat, self.inv_mat * rhs.inv_mat)
+    }
+}
+
+impl std::ops::Mul<Transform> for Transform {
+    type Output = Transform;
+    fn mul(self, rhs: Transform) -> Self {
+        self.compose(rhs)
+    }
+}
+
+/// Describes the ability to apply a `Transform` on particular type
+pub trait Transformable {
+    fn apply_t(&self, trans: &Transform) -> Self;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn composition() {
+        let a = Point3::ORIGIN;
+        let go_up = Transform::translation(&Vec3::new(0.0, 1.0, 0.0));
+        let go_left = Transform::translation(&Vec3::new(-1.0, 0.0, 0.0));
+
+        let both = go_left * go_up;
+
+        let transformed = a.apply_t(&both);
+        assert_eq!(transformed, Point3::new(-1.0, 1.0, 0.0));
     }
 }

@@ -1,7 +1,9 @@
 #![allow(unused_variables)]
 
+use log::info;
 use thruster::algebra::prelude::*;
 use thruster::app;
+use thruster::logger;
 use thruster::material::{MatTex, Material, Reflectivity, Transparency};
 use thruster::parser;
 use thruster::scene::Scene;
@@ -9,6 +11,10 @@ use thruster::shape::{Shape, Triangle};
 use thruster::texture_map;
 
 pub fn main() -> std::result::Result<(), String> {
+    logger::init().expect("Could not initialize logger");
+
+    info!("Welcome to Thruster!");
+
     let texture_map = texture_map::TextureMap::new();
 
     let scn_str =
