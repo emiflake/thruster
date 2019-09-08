@@ -1,6 +1,5 @@
 use crate::algebra::prelude::*;
 use crate::scene::RenderData;
-use crate::shape::Ray;
 use rand::prelude::*;
 
 use serde_derive::{Deserialize, Serialize};

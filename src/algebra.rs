@@ -6,3 +6,9 @@ pub mod bounds;
 
 /// Vectors and Vector maths
 pub mod vectors;
+
+/// Ray-Object Intersections
+pub mod intersection;
+
+/// Rays
+pub mod ray;

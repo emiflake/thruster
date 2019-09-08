@@ -1,5 +1,4 @@
 use crate::algebra::prelude::*;
-use crate::shape::Ray;
 
 /// A Bounding Box to represent the maximum range of an object, this is useful for Ray intersection
 /// checking since it will guarantee that any Ray that can intersect the object, will also

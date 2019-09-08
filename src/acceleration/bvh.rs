@@ -7,7 +7,7 @@
 
 use crate::acceleration::queue_systems::FastStack;
 use crate::algebra::prelude::*;
-use crate::shape::{Intersection, Ray, SceneObject, Shape};
+use crate::shape::{SceneObject, Shape};
 use crate::utils;
 
 use std::cmp::Ordering;

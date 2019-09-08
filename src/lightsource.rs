@@ -1,6 +1,5 @@
 use crate::algebra::prelude::*;
 use crate::scene::RenderData;
-use crate::shape::{Intersection, Ray};
 use serde_derive::{Deserialize, Serialize};
 
 use rand::prelude::*;
