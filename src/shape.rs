@@ -1,9 +1,5 @@
 use crate::algebra::prelude::*;
-use crate::lightsource::Light;
-use crate::material::{MatTex, Material};
-use crate::scene::RenderData;
-
-use rand::prelude::*;
+use crate::material::Material;
 
 use serde_derive::{Deserialize, Serialize};
 

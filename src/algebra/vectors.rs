@@ -1,3 +1,4 @@
+use crate::algebra::prelude::*;
 use image::{Pixel, Rgb, Rgba};
 use serde_derive::{Deserialize, Serialize};
 
@@ -12,6 +13,10 @@ pub struct Vec2 {
 impl Vec2 {
     pub const fn new(x: f64, y: f64) -> Vec2 {
         Vec2 { x, y }
+    }
+
+    pub fn has_nans(&self) -> bool {
+        self.x.is_nan() || self.y.is_nan()
     }
 }
 
@@ -73,6 +78,12 @@ impl std::ops::Neg for Vec3 {
     }
 }
 
+impl From<Point3> for Vec3 {
+    fn from(p: Point3) -> Self {
+        Self::new(p.x, p.y, p.z)
+    }
+}
+
 /// Make an object clampable between two instances of itself
 /// # Example:
 /// ```
@@ -105,6 +116,10 @@ impl Vec3 {
         y: 0.0,
         z: 0.0,
     };
+
+    pub fn has_nans(&self) -> bool {
+        self.x.is_nan() || self.y.is_nan() || self.z.is_nan()
+    }
 
     pub const fn new(x: f64, y: f64, z: f64) -> Self {
         Vec3 { x, y, z }
