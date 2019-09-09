@@ -1,7 +1,7 @@
 /// This is the prelude file for the Algebra core
 pub use super::bounds::BoundingBox;
 pub use super::combinators as comb;
-pub use super::intersection::Intersection;
+pub use super::combinators::Clampable;
 pub use super::matrix::Mat4x4;
 pub use super::normal::Normal;
 pub use super::points::{Point2, Point3};

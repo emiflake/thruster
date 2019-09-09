@@ -23,25 +23,25 @@ extern crate serde;
 // (!?)
 extern crate pdqselect;
 
+#[macro_use]
+extern crate enumset;
+
 /// Acceleration structures for speeding up rendering
 pub mod acceleration;
 
 /// Algebra & Maths
 pub mod algebra;
-pub mod app;
-pub mod camera;
+//pub mod app;
+pub mod bxdf;
+pub mod core;
 pub mod denoise;
 pub mod dither;
+pub mod geometry;
 pub mod key_state;
-pub mod lightsource;
+pub mod light;
 pub mod logger;
-pub mod material;
 pub mod parser;
 pub mod profiler;
-pub mod render_config;
-pub mod scene;
-pub mod shape;
-pub mod skybox;
+pub mod sampler;
 pub mod support;
-pub mod texture_map;
 pub mod utils;

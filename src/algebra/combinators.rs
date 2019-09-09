@@ -20,6 +20,59 @@ pub fn cross<A: Index<usize, Output = f64>, B: Index<usize, Output = f64>>(a: &A
     )
 }
 
+/// Make an object clampable between two instances of itself
+/// # Example:
+/// ```
+/// use thruster::algebra::prelude::*;
+/// println!("{}", (5f64).clamp_to(2.0, 10.0));
+/// //=>  2.0
+/// println!("{}", (14f64).clamp_to(2.0, 10.0));
+/// //=> 10.0
+/// ```
+pub trait Clampable {
+    fn clamp_to(self, min: Self, max: Self) -> Self;
+}
+
+impl Clampable for f64 {
+    fn clamp_to(self, min: f64, max: f64) -> f64 {
+        if self > max {
+            return max;
+        }
+        if self < min {
+            return min;
+        }
+        self
+    }
+}
+
+pub fn spherical_direction(sin_theta: f64, cos_theta: f64, phi: f64) -> Vec3 {
+    Vec3::new(sin_theta * phi.cos(), sin_theta * phi.sin(), cos_theta)
+}
+
+pub fn spherical_direction_axes(
+    sin_theta: f64,
+    cos_theta: f64,
+    phi: f64,
+    x: &Vec3,
+    y: &Vec3,
+    z: &Vec3,
+) -> Vec3 {
+    sin_theta * phi.cos() * *x + sin_theta * phi.sin() * *y + cos_theta * *z
+}
+
+pub fn spherical_theta(v: &Vec3) -> f64 {
+    v.z.clamp_to(-1.0, 1.0).acos()
+}
+
+pub fn spherical_phi(v: &Vec3) -> f64 {
+    let p = v.x.atan2(v.y);
+    if p < 0.0 {
+        p + 2.0 * std::f64::consts::PI
+    } else {
+        p
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

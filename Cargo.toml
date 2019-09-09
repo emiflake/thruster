@@ -28,6 +28,8 @@ serde = "1.0.99"
 serde_derive = "1.0.99"
 ron = "*"
 
+enumset = "0.4.0"
+
 # For partitioning
 pdqselect = "0.1.0"
 

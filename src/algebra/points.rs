@@ -1,6 +1,7 @@
 use crate::algebra::prelude::*;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+use serde::{Deserialize, Serialize};
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize, Serialize)]
 pub struct Point2 {
     pub x: f64,
     pub y: f64,
@@ -43,7 +44,7 @@ impl From<Vec2> for Point2 {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize, Serialize)]
 pub struct Point3 {
     pub x: f64,
     pub y: f64,
@@ -75,6 +76,24 @@ impl Point3 {
     /// Get the distance between two points
     pub fn distance(&self, rhs: &Self) -> f64 {
         (*self - *rhs).length()
+    }
+
+    /// Element-wise minimum over two Points
+    pub fn min(self, rhs: &Self) -> Self {
+        Point3 {
+            x: self.x.min(rhs.x),
+            y: self.y.min(rhs.y),
+            z: self.z.min(rhs.z),
+        }
+    }
+
+    /// Element-wise maximum over two Points
+    pub fn max(self, rhs: &Self) -> Self {
+        Point3 {
+            x: self.x.max(rhs.x),
+            y: self.y.max(rhs.y),
+            z: self.z.max(rhs.z),
+        }
     }
 }
 

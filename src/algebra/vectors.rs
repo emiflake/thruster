@@ -90,31 +90,6 @@ impl std::ops::Neg for Vec3 {
     }
 }
 
-/// Make an object clampable between two instances of itself
-/// # Example:
-/// ```
-/// use thruster::algebra::vectors::Clampable;
-/// println!("{}", (5f64).clamp_to(2.0, 10.0));
-/// //=>  2.0
-/// println!("{}", (14f64).clamp_to(2.0, 10.0));
-/// //=> 10.0
-/// ```
-pub trait Clampable {
-    fn clamp_to(self, min: Self, max: Self) -> Self;
-}
-
-impl Clampable for f64 {
-    fn clamp_to(self, min: f64, max: f64) -> f64 {
-        if self > max {
-            return max;
-        }
-        if self < min {
-            return min;
-        }
-        self
-    }
-}
-
 impl Vec3 {
     /// The origin Vector (0.0, 0.0, 0.0)
     pub const ORIGIN: Self = Vec3 {
@@ -318,6 +293,41 @@ impl Vertex {
     }
 }
 
+impl std::ops::Index<usize> for Vec3 {
+    type Output = f64;
+    fn index(&self, i: usize) -> &Self::Output {
+        match i {
+            0 => &self.x,
+            1 => &self.y,
+            2 => &self.z,
+            _ => panic!("Dimension {} invalid while indexing 3D type", i),
+        }
+    }
+}
+
+impl std::ops::IndexMut<usize> for Vec3 {
+    fn index_mut(&mut self, i: usize) -> &mut Self::Output {
+        match i {
+            0 => &mut self.x,
+            1 => &mut self.y,
+            2 => &mut self.z,
+            _ => panic!("Dimension {} invalid while indexing 3D type", i),
+        }
+    }
+}
+
+impl Transformable for Vec3 {
+    fn apply_t(&self, trans: &Transform) -> Self {
+        let Self { x, y, z } = self;
+        let Transform { mat, inv_mat } = trans;
+        Vec3::new(
+            mat.at(0, 0) * x + mat.at(0, 1) * y + mat.at(0, 2) * z,
+            mat.at(1, 0) * x + mat.at(1, 1) * y + mat.at(1, 2) * z,
+            mat.at(2, 0) * x + mat.at(2, 1) * y + mat.at(2, 2) * z,
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -413,27 +423,4 @@ mod tests {
         assert_eq!(a.dim(2), 1.0);
     }
 
-}
-
-impl std::ops::Index<usize> for Vec3 {
-    type Output = f64;
-    fn index(&self, i: usize) -> &Self::Output {
-        match i {
-            0 => &self.x,
-            1 => &self.y,
-            2 => &self.z,
-            _ => panic!("Dimension {} invalid while indexing 3D type", i),
-        }
-    }
-}
-
-impl std::ops::IndexMut<usize> for Vec3 {
-    fn index_mut(&mut self, i: usize) -> &mut Self::Output {
-        match i {
-            0 => &mut self.x,
-            1 => &mut self.y,
-            2 => &mut self.z,
-            _ => panic!("Dimension {} invalid while indexing 3D type", i),
-        }
-    }
 }

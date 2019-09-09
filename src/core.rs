@@ -1,1 +1,11 @@
-pub mod core::shape;
+pub mod aggregate;
+pub mod image;
+pub mod intersection;
+pub mod material;
+pub mod medium;
+pub mod primitive;
+pub mod scene;
+pub mod spectrum;
+pub mod surface_interaction;
+pub mod texture;
+pub mod transport;

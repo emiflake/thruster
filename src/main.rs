@@ -1,116 +1,60 @@
 #![allow(unused_variables)]
 
 use log::info;
+use std::sync::Arc;
 use thruster::algebra::prelude::*;
-use thruster::app;
+use thruster::core::{
+    aggregate::Aggregate,
+    material::{Material, Matte},
+    medium::{HomogeneousMedium, Medium, MediumInterface},
+    primitive::{GeometricPrimitive, Primitive},
+    scene::Scene,
+    spectrum::RGBSpectrum,
+    texture::{ConstantTexture, Texture},
+};
+use thruster::geometry::{shape::Shape, sphere::Sphere};
+use thruster::light::area_light::AreaLight;
 use thruster::logger;
-use thruster::material::{MatTex, Material, Reflectivity, Transparency};
-use thruster::parser;
-use thruster::scene::Scene;
-use thruster::shape::{Shape, Triangle};
-use thruster::texture_map;
 
 pub fn main() -> std::result::Result<(), String> {
     logger::init().expect("Could not initialize logger");
 
-    info!("Welcome to Thruster!");
+    info!("Hewo user~! Wewcome to tuwuster!");
 
-    let texture_map = texture_map::TextureMap::new();
+    let ex_medium = HomogeneousMedium {
+        sigma_a: RGBSpectrum::from_rgb(255.0, 255.0, 255.0),
+        sigma_s: RGBSpectrum::from_rgb(255.0, 255.0, 255.0),
+        sigma_t: RGBSpectrum::from_rgb(255.0, 255.0, 255.0),
+        g: 1.0,
+    };
 
-    let scn_str =
-        std::fs::read_to_string("cfg.ron").expect("Could not read configuration file 'cfg.ron'");
-    let mut scene: Scene = ron::de::from_str(&scn_str).expect("Could not parse 'cfg.ron'");
+    let prims: Vec<Arc<dyn Primitive>> = vec![Arc::new(GeometricPrimitive {
+        area_light: Arc::new(AreaLight),
+        material: Arc::new(Matte {
+            kd: Arc::new(ConstantTexture::new(RGBSpectrum::from_rgb(
+                255.0, 255.0, 255.0,
+            ))),
+        }),
+        shape: Arc::new(Sphere::new(Point3::new(0.0, 0.0, 10.0), 5.0)),
+        medium_interface: MediumInterface {
+            inside: Box::new(ex_medium.clone()),
+            outside: Box::new(ex_medium.clone()),
+        },
+    })];
 
-    let obj =
-        parser::parse("./objs/codam-text-high.obj".to_string()).expect("Could not parse .obj");
-    for (a, b, c) in obj.tris.iter() {
-        let a = Vertex {
-            origin: a.origin.rotate_around(0, std::f64::consts::FRAC_PI_2)
-                - Vec3::new(0.0, 0.0, 1.0),
-            normal: a.normal.rotate_around(0, std::f64::consts::FRAC_PI_2),
-            uv: a.uv,
-        };
-        let b = Vertex {
-            origin: b.origin.rotate_around(0, std::f64::consts::FRAC_PI_2)
-                - Vec3::new(0.0, 0.0, 1.0),
-            normal: b.normal.rotate_around(0, std::f64::consts::FRAC_PI_2),
-            uv: b.uv,
-        };
-        let c = Vertex {
-            origin: c.origin.rotate_around(0, std::f64::consts::FRAC_PI_2)
-                - Vec3::new(0.0, 0.0, 1.0),
-            normal: c.normal.rotate_around(0, std::f64::consts::FRAC_PI_2),
-            uv: c.uv,
-        };
+    let aggregate = Aggregate::from_primitives(prims);
 
-        scene.shapes.push(Shape::Triangle(Triangle {
-            a,
-            b,
-            c,
-            material: Material {
-                texture: MatTex::Color(Vec3::new(255.0, 255.0, 255.0)),
-                c_ambient: 0.3,
-                c_diffuse: 0.3,
-                reflectivity: Reflectivity {
-                    amount: 0.4,
-                    blurriness: 1.0,
-                },
-                transparency: Transparency {
-                    amount: 0.0,
-                    blurriness: 0.0,
-                    index_of_refraction: 1.0,
-                },
-            },
-        }))
-    }
-    let obj =
-        parser::parse("./objs/codam-stripes-high.obj".to_string()).expect("Could not parse .obj");
-    for (a, b, c) in obj.tris.iter() {
-        let a = Vertex {
-            origin: a.origin.rotate_around(0, std::f64::consts::FRAC_PI_2),
-            normal: a.normal.rotate_around(0, std::f64::consts::FRAC_PI_2),
-            uv: a.uv,
-        };
-        let b = Vertex {
-            origin: b.origin.rotate_around(0, std::f64::consts::FRAC_PI_2),
-            normal: b.normal.rotate_around(0, std::f64::consts::FRAC_PI_2),
-            uv: b.uv,
-        };
-        let c = Vertex {
-            origin: c.origin.rotate_around(0, std::f64::consts::FRAC_PI_2),
-            normal: c.normal.rotate_around(0, std::f64::consts::FRAC_PI_2),
-            uv: c.uv,
-        };
+    let scene = Scene::new(Arc::new(aggregate), Vec::new());
 
-        scene.shapes.push(Shape::Triangle(Triangle {
-            a,
-            b,
-            c,
-            material: Material {
-                texture: MatTex::Texture {
-                    handle: "./textures/codam.png".to_owned(),
-                    scaling: Vec2::new(1.0, 1.0),
-                },
-                c_ambient: 0.3,
-                c_diffuse: 0.3,
-                reflectivity: Reflectivity {
-                    amount: 0.4,
-                    blurriness: 1.0,
-                },
-                transparency: Transparency {
-                    amount: 0.0,
-                    blurriness: 0.0,
-                    index_of_refraction: 1.0,
-                },
-            },
-        }))
-    }
+    println!("{:#?}", scene);
 
-    let mut app = app::App::new(scene, texture_map);
+    println!(
+        "{}",
+        scene.does_intersect(&Ray::new(
+            Point3::new(4.5, 0.0, 0.0),
+            Vec3::new(0.01, 0.01, 1.0).normalized()
+        ))
+    );
 
-    app.run()?;
-
-    //texture_map.preload_all_in_scene(&scene);
-    //scene.screenshot("screenshot.png", 640.0, 480.0, &texture_map);
     Ok(())
 }

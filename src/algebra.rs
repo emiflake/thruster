@@ -9,9 +9,6 @@ pub mod vectors;
 
 pub mod points;
 
-/// Ray-Object Intersections
-pub mod intersection;
-
 /// Rays
 pub mod ray;
 
