@@ -21,7 +21,7 @@ imgui-winit-support = "0.1.0"
 
 oidn = "0.2.0"
 
-serde = "1.0.99"
+serde = "1.0.100"
 serde_derive = "1.0.99"
 ron = "*"
 pdqselect = "0.1.0"
