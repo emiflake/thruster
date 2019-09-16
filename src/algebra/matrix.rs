@@ -1,7 +1,7 @@
 use std::iter::FromIterator;
 use std::slice::{Iter, IterMut};
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub struct Mat4x4 {
     pub m: [f64; 16],
 }

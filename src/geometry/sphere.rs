@@ -16,8 +16,8 @@ impl Sphere {
 impl Shape for Sphere {
     fn bounds(&self) -> BoundingBox {
         BoundingBox {
-            min_vector: self.origin - Vec3::new(1.0, 1.0, 1.0) * self.radius,
-            max_vector: self.origin + Vec3::new(1.0, 1.0, 1.0) * self.radius,
+            min: self.origin - Vec3::new(1.0, 1.0, 1.0) * self.radius,
+            max: self.origin + Vec3::new(1.0, 1.0, 1.0) * self.radius,
         }
     }
 

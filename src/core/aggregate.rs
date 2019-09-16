@@ -1,6 +1,7 @@
 use crate::acceleration::bvh::{BVHAccel, BVHConstructionAlgorithm, BVHLinearTree};
 use crate::algebra::prelude::*;
-use crate::core::intersection::Intersection;
+use crate::bxdf::bsdf::BSDF;
+use crate::core::interaction::Interaction;
 use crate::core::material::Material;
 use crate::core::primitive::Primitive;
 use crate::light::area_light::AreaLight;
@@ -27,8 +28,12 @@ impl Primitive for Aggregate {
         self.tree.bounds.clone()
     }
 
-    fn intersect(&self, ray: &Ray) -> Option<Intersection> {
+    fn intersect(&self, ray: &Ray) -> Option<Interaction> {
         self.tree.intersect(ray)
+    }
+
+    fn compute_scattering_functions(&self, interaction: &Interaction) -> BSDF {
+        unimplemented!("Don't compute from Aggregate");
     }
 
     fn does_intersect(&self, ray: &Ray) -> bool {

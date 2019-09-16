@@ -9,19 +9,19 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BoundingBox {
     /// The vector containing the low values of the bounding box
-    pub min_vector: Point3,
+    pub min: Point3,
     /// The vector containing the high values of the bounding box
-    pub max_vector: Point3,
+    pub max: Point3,
 }
 
 impl BoundingBox {
     pub const EMPTY: Self = Self {
-        min_vector: Point3 {
+        min: Point3 {
             x: std::f64::MAX,
             y: std::f64::MAX,
             z: std::f64::MAX,
         },
-        max_vector: Point3 {
+        max: Point3 {
             x: std::f64::MIN,
             y: std::f64::MIN,
             z: std::f64::MIN,
@@ -32,20 +32,20 @@ impl BoundingBox {
     /// Extract a bound
     fn bounds(&self, sign: f64) -> Point3 {
         if sign >= 1.0 {
-            self.min_vector
+            self.min
         } else {
-            self.max_vector
+            self.max
         }
     }
 
     /// Get the centre of the BoundingBox
     pub fn centre(&self) -> Point3 {
-        (self.min_vector + self.max_vector) / 2.0
+        (self.min + self.max) / 2.0
     }
 
     /// Get the diagonal vector from min to max
     pub fn diagonal(&self) -> Vec3 {
-        self.max_vector - self.min_vector
+        self.max - self.min
     }
 
     /// Returns the dimension for which the box's extent is biggest
@@ -63,36 +63,36 @@ impl BoundingBox {
     /// Merge two BoundingBox by joining them
     pub fn merge(&self, other: &BoundingBox) -> Self {
         Self {
-            min_vector: self.min_vector.min(&other.min_vector),
-            max_vector: self.max_vector.max(&other.max_vector),
+            min: self.min.min(&other.min),
+            max: self.max.max(&other.max),
         }
     }
 
     pub fn merge_with_vec(&self, v: &Vec3) -> Self {
         let p = Point3::from(*v);
         Self {
-            min_vector: self.min_vector.min(&p),
-            max_vector: self.max_vector.max(&p),
+            min: self.min.min(&p),
+            max: self.max.max(&p),
         }
     }
 
     pub fn merge_with_point(&self, v: &Point3) -> Self {
         Self {
-            min_vector: self.min_vector.min(v),
-            max_vector: self.max_vector.max(v),
+            min: self.min.min(v),
+            max: self.max.max(v),
         }
     }
 
     pub fn offset(&self, v: &Point3) -> Vec3 {
-        let mut o = *v - self.min_vector;
-        if self.max_vector.x > self.min_vector.x {
-            o.x /= self.max_vector.x - self.min_vector.x;
+        let mut o = *v - self.min;
+        if self.max.x > self.min.x {
+            o.x /= self.max.x - self.min.x;
         }
-        if self.max_vector.y > self.min_vector.y {
-            o.y /= self.max_vector.y - self.min_vector.y;
+        if self.max.y > self.min.y {
+            o.y /= self.max.y - self.min.y;
         }
-        if self.max_vector.z > self.min_vector.z {
-            o.z /= self.max_vector.z - self.min_vector.z;
+        if self.max.z > self.min.z {
+            o.z /= self.max.z - self.min.z;
         }
         o
     }

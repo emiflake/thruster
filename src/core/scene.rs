@@ -1,5 +1,5 @@
 use crate::algebra::prelude::*;
-use crate::core::intersection::Intersection;
+use crate::core::interaction::Interaction;
 use crate::core::primitive::Primitive;
 use crate::light::Light;
 use std::sync::Arc;
@@ -22,7 +22,7 @@ impl<'a> Scene<'a> {
         }
     }
 
-    pub fn intersect(&self, ray: &Ray) -> Option<Intersection> {
+    pub fn intersect(&self, ray: &Ray) -> Option<Interaction> {
         self.aggregate.intersect(ray)
     }
 

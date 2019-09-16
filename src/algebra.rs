@@ -23,3 +23,5 @@ pub mod normal;
 
 /// Combinators on various different types
 pub mod combinators;
+
+pub mod pixel;

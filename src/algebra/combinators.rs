@@ -1,6 +1,14 @@
 use crate::algebra::prelude::*;
 use std::ops::{Add, Index, Mul};
 
+pub fn to_radians(deg: f64) -> f64 {
+    deg / 180.0 * std::f64::consts::PI
+}
+
+pub fn to_degrees(rad: f64) -> f64 {
+    rad / std::f64::consts::PI * 180.0
+}
+
 /// Compute the dot product between two elements
 pub fn dot<A: Index<usize, Output = f64>, B: Index<usize, Output = f64>>(a: &A, b: &B) -> f64 {
     a[0] * b[0] + a[1] * b[1] + a[2] * b[2]

@@ -7,7 +7,7 @@
 
 use crate::acceleration::queue_systems::FastStack;
 use crate::algebra::prelude::*;
-use crate::core::{intersection::Intersection, primitive::Primitive};
+use crate::core::{interaction::Interaction, primitive::Primitive};
 use crate::geometry::shape::Shape;
 use crate::utils;
 use std::sync::Arc;
@@ -60,9 +60,7 @@ impl BVHConstructionAlgorithm {
         match self {
             BVHConstructionAlgorithm::Middle => {
                 let len = primitive_info.len();
-                let pmid = (centroid_bounds.min_vector[dimension]
-                    + centroid_bounds.max_vector[dimension])
-                    / 2.0;
+                let pmid = (centroid_bounds.min[dimension] + centroid_bounds.max[dimension]) / 2.0;
                 let mut middle =
                     utils::partition(primitive_info, |pi| pi.centre[(dimension)] < pmid);
                 if middle == 0 || middle == len {
@@ -300,8 +298,7 @@ impl BVHAccel {
                     a.merge_with_point(&b.centre)
                 });
             let dimension = centroid_bounds.max_extent();
-            if (centroid_bounds.max_vector[(dimension)] - centroid_bounds.min_vector[dimension])
-                .abs()
+            if (centroid_bounds.max[dimension] - centroid_bounds.min[dimension]).abs()
                 < std::f64::EPSILON
             {
                 // Centroid bounds are small, construct leaf node.
@@ -454,7 +451,7 @@ impl BVHLinearTree {
         }
     }
 
-    pub fn intersect(&self, ray: &Ray) -> Option<Intersection> {
+    pub fn intersect(&self, ray: &Ray) -> Option<Interaction> {
         let inv_dir = Vec3::new(
             1.0 / ray.direction.x,
             1.0 / ray.direction.y,
@@ -467,17 +464,21 @@ impl BVHLinearTree {
         );
         let mut current_task = 0;
         let mut queue = FastStack::new();
-        let mut closest: Option<Intersection> = None;
+        let mut closest: Option<Interaction> = None;
         loop {
             let n = &self.linear_nodes[current_task];
             if n.bounding_box.does_intersect(ray) {
                 if n.primitive_amount > 0 {
                     for i in 0..n.primitive_amount {
                         let prim = &self.primitives[i + n.node_content];
-                        if let Some(intersection) = prim.intersect(ray) {
+                        if let Some(interaction) = prim.intersect(ray) {
+                            //let interaction = Interaction {
+                            //geom: intersection,
+                            //primitive: Arc::clone(prim),
+                            //};
                             closest = match closest {
-                                None => Some(intersection),
-                                Some(closest) => Some(closest.nearest(intersection)),
+                                None => Some(interaction),
+                                Some(closest) => Some(closest.nearest(interaction)),
                             }
                         }
                     }

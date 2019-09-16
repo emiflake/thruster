@@ -1,11 +1,16 @@
 use crate::algebra::prelude::*;
 
+#[derive(Debug, Clone)]
 pub struct Transform {
     pub mat: Mat4x4,
     pub inv_mat: Mat4x4,
 }
 
 impl Transform {
+    pub fn identity() -> Self {
+        Self::from_mat(Mat4x4::IDENTITY)
+    }
+
     pub const fn new(mat: Mat4x4, inv_mat: Mat4x4) -> Self {
         Self { mat, inv_mat }
     }
@@ -125,7 +130,32 @@ impl Transform {
         Transform::new(inv_mat, mat)
     }
 
-    pub fn compose(self, rhs: Self) -> Self {
+    /// Generate perspective transform
+    /// `fov` is in degrees
+    pub fn perspective(fov: f64, n: f64, f: f64) -> Self {
+        let persp = Mat4x4::new([
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            f / (f - n),
+            -f * n / (f - n),
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+        ]);
+        let inv_tan_ang = 1.0 / (comb::to_radians(fov) / 2.0).tan();
+        Self::scaling(inv_tan_ang, inv_tan_ang, 1.0) * Self::from_mat(persp)
+    }
+
+    pub fn compose(self, rhs: &Self) -> Self {
         Self::new(self.mat * rhs.mat, self.inv_mat * rhs.inv_mat)
     }
 }
@@ -133,13 +163,20 @@ impl Transform {
 impl std::ops::Mul<Transform> for Transform {
     type Output = Transform;
     fn mul(self, rhs: Transform) -> Self {
-        self.compose(rhs)
+        self.compose(&rhs)
     }
 }
 
 /// Describes the ability to apply a `Transform` on particular type
 pub trait Transformable {
-    fn apply_t(&self, trans: &Transform) -> Self;
+    fn apply_t(self, trans: &Transform) -> Self;
+}
+
+/// Transform on Transform is just composition
+impl Transformable for Transform {
+    fn apply_t(self, trans: &Transform) -> Self {
+        self.compose(&trans)
+    }
 }
 
 #[cfg(test)]

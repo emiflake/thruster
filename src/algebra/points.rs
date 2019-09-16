@@ -117,6 +117,13 @@ impl std::ops::Mul<Point3> for Point3 {
     }
 }
 
+impl std::ops::Mul<Point3> for Vec3 {
+    type Output = Point3;
+    fn mul(self, rhs: Point3) -> Self::Output {
+        Point3::new(self.x * rhs.x, self.y * rhs.y, self.z * rhs.z)
+    }
+}
+
 impl std::ops::Mul<f64> for Point3 {
     type Output = Point3;
     fn mul(self, rhs: f64) -> Self {
@@ -200,7 +207,7 @@ impl std::ops::IndexMut<usize> for Point3 {
 }
 
 impl Transformable for Point3 {
-    fn apply_t(&self, trans: &Transform) -> Self {
+    fn apply_t(self, trans: &Transform) -> Self {
         let Self { x, y, z } = self;
         let m = &trans.mat;
         let xp = m.at(0, 0) * x + m.at(0, 1) * y + m.at(0, 2) * z + m.at(0, 3);

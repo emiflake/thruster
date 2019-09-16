@@ -317,7 +317,7 @@ impl std::ops::IndexMut<usize> for Vec3 {
 }
 
 impl Transformable for Vec3 {
-    fn apply_t(&self, trans: &Transform) -> Self {
+    fn apply_t(self, trans: &Transform) -> Self {
         let Self { x, y, z } = self;
         let Transform { mat, inv_mat } = trans;
         Vec3::new(

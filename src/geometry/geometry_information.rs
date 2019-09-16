@@ -1,5 +1,6 @@
 use crate::algebra::prelude::*;
 
+#[derive(Debug, Clone)]
 pub struct GeometryInformation {
     /// The 'distance' the ray hit at. This is derived from `p = rO + t * rD`
     pub t: f64,

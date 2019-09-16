@@ -6,8 +6,8 @@ use crate::sampler::Sampler;
 pub struct MediumInteraction;
 
 pub trait Medium: std::fmt::Debug {
-    fn tr(&self, ray: &Ray, sampler: &Sampler) -> RGBSpectrum;
-    fn sample(&self, ray: &Ray, sampler: &Sampler) -> MediumInteraction;
+    fn tr(&self, ray: &Ray, sampler: &dyn Sampler) -> RGBSpectrum;
+    fn sample(&self, ray: &Ray, sampler: &dyn Sampler) -> MediumInteraction;
 }
 
 #[derive(Debug, Clone)]
@@ -30,12 +30,12 @@ impl Default for HomogeneousMedium {
 }
 
 impl Medium for HomogeneousMedium {
-    fn tr(&self, ray: &Ray, sampler: &Sampler) -> RGBSpectrum {
+    fn tr(&self, ray: &Ray, sampler: &dyn Sampler) -> RGBSpectrum {
         RGBSpectrum::BLACK
         //(-self.sigma_t * (ray.max_t * ray.direction.length())).exp()
     }
 
-    fn sample(&self, ray: &Ray, sampler: &Sampler) -> MediumInteraction {
+    fn sample(&self, ray: &Ray, sampler: &dyn Sampler) -> MediumInteraction {
         MediumInteraction
     }
 }

@@ -128,7 +128,7 @@ impl std::ops::IndexMut<usize> for Normal {
 }
 
 impl Transformable for Normal {
-    fn apply_t(&self, trans: &Transform) -> Self {
+    fn apply_t(self, trans: &Transform) -> Self {
         let Self { x, y, z } = self;
         let Transform { mat, inv_mat } = trans;
         Self::new(

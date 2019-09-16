@@ -33,6 +33,12 @@ impl RGBSpectrum {
     pub fn has_nans(&self) -> bool {
         self.iter().any(|s| s.is_nan())
     }
+
+    pub fn add_contribution(&mut self, rhs: RGBSpectrum, spp: usize) {
+        for (s, o) in self.iter_mut().zip(rhs.iter()) {
+            *s += o / f64::from(spp as u32);
+        }
+    }
 }
 
 impl FromIterator<f64> for RGBSpectrum {
@@ -66,6 +72,21 @@ impl std::ops::Mul<f64> for RGBSpectrum {
     type Output = RGBSpectrum;
     fn mul(self, rhs: f64) -> Self {
         self.iter().map(|s| s * rhs).collect()
+    }
+}
+
+impl std::ops::Add<RGBSpectrum> for RGBSpectrum {
+    type Output = RGBSpectrum;
+    fn add(self, rhs: Self) -> Self {
+        self.iter().zip(rhs.iter()).map(|(a, b)| a + b).collect()
+    }
+}
+
+impl std::ops::AddAssign for RGBSpectrum {
+    fn add_assign(&mut self, rhs: Self) {
+        for (s, o) in self.iter_mut().zip(rhs.iter()) {
+            *s += o;
+        }
     }
 }
 

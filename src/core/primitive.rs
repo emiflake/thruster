@@ -1,14 +1,17 @@
 use crate::algebra::prelude::*;
-use crate::core::intersection::Intersection;
+use crate::bxdf::bsdf::BSDF;
+use crate::core::interaction::Interaction;
 use crate::core::material::Material;
 use crate::core::medium::MediumInterface;
+use crate::core::transport::TransportMode;
+use crate::geometry::geometry_information::GeometryInformation;
 use crate::geometry::shape::Shape;
 use crate::light::area_light::AreaLight;
 use std::sync::Arc;
 
 pub trait Primitive: std::fmt::Debug {
     fn bounds(&self) -> BoundingBox;
-    fn intersect(&self, ray: &Ray) -> Option<Intersection>;
+    fn intersect(&self, ray: &Ray) -> Option<Interaction>;
     fn does_intersect(&self, ray: &Ray) -> bool {
         self.intersect(ray).is_some()
     }
@@ -16,13 +19,7 @@ pub trait Primitive: std::fmt::Debug {
     fn mat<'a>(&'a self) -> Option<Arc<dyn Material + 'a>>;
     fn area_light(&self) -> Option<Arc<AreaLight>>;
 
-    // TODO: needs thinking
-    //fn compute_scattering_functions(
-    //&self,
-    //intersection: &Intersection,
-    //mode: TransportMode,
-    //allow_multiple_lobes: bool,
-    //) -> ScatteringFunction;
+    fn compute_scattering_functions(&self, interaction: &Interaction) -> BSDF;
 }
 
 #[derive(Debug)]
@@ -38,10 +35,15 @@ impl<'a> Primitive for GeometricPrimitive<'a> {
         self.shape.bounds()
     }
 
-    fn intersect(&self, ray: &Ray) -> Option<Intersection> {
-        let geom = self.shape.intersect(ray)?;
+    fn intersect(&self, ray: &Ray) -> Option<Interaction> {
+        self.shape.intersect(ray).map(|geom| Interaction {
+            geom,
+            primitive: Arc::new(self),
+        })
+    }
 
-        Some(Intersection { geom })
+    fn compute_scattering_functions(&self, interaction: &Interaction) -> BSDF {
+        self.material.compute_scattering_functions(interaction)
     }
 
     fn does_intersect(&self, ray: &Ray) -> bool {
