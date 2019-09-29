@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::algebra::prelude::*;
 
 use crate::core::camera::CameraSample;
@@ -27,28 +29,38 @@ pub trait Sampler {
 
 use rand::prelude::*;
 
+pub struct RandomSamplerConstructor {
+    spp: usize,
+}
+
+impl RandomSamplerConstructor {
+    pub fn new(spp: usize) -> Self {
+        Self { spp }
+    }
+
+    pub fn construct(&self) -> RandomSampler {
+        RandomSampler::new(self.spp)
+    }
+}
+
 pub struct RandomSampler {
-    rng: Option<Box<ThreadRng>>,
+    rng: ThreadRng,
     spp: usize,
     sample_count: usize,
 }
 
 impl RandomSampler {
     pub fn new(spp: usize) -> Self {
+        let rng = rand::thread_rng();
         Self {
-            rng: None,
+            rng,
             spp,
-            sample_count: 0,
+            sample_count: 1,
         }
     }
 }
 
 impl Sampler for RandomSampler {
-    fn start_pixel(&mut self, _p: Pixel) {
-        self.rng = Some(Box::new(rand::thread_rng()));
-        self.sample_count = 1;
-    }
-
     fn spp(&self) -> usize {
         self.spp
     }
@@ -58,10 +70,7 @@ impl Sampler for RandomSampler {
     }
 
     fn get_1d(&mut self) -> f64 {
-        match &mut self.rng {
-            None => 0.0,
-            Some(rng) => rng.gen::<f64>(),
-        }
+        self.rng.gen::<f64>()
     }
 
     fn start_next_sample(&mut self) -> bool {

@@ -170,6 +170,12 @@ impl Vec3 {
         Rgba([self.x as u8, self.y as u8, self.z as u8, 255])
     }
 
+    pub fn hemisphere(u: f64, v: f64) -> Vec3 {
+        let r = (1.0 - u * u).sqrt();
+        let phi = 2.0 * std::f64::consts::PI * v;
+        Vec3::new(phi.cos() * r, phi.sin() * r, u)
+    }
+
     /// Rotate a Vector with the angles of another Vector
     ///
     /// **Warning, incomplete, and possibly faulty.**

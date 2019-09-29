@@ -14,7 +14,7 @@ pub struct Aggregate {
 }
 
 impl Aggregate {
-    pub fn from_primitives(primitives: Vec<Arc<dyn Primitive>>) -> Self {
+    pub fn from_primitives(primitives: Vec<Arc<dyn Primitive + Sync + Send>>) -> Self {
         let mut accel = BVHAccel::new(BVHConstructionAlgorithm::SAH, primitives);
         let (total, node) = accel.construct().expect("Could not construct BVHTree");
         let flat_bvh = accel.flatten(Box::new(node), total);
@@ -23,27 +23,16 @@ impl Aggregate {
     }
 }
 
-impl Primitive for Aggregate {
-    fn bounds(&self) -> BoundingBox {
+impl Aggregate {
+    pub fn bounds(&self) -> BoundingBox {
         self.tree.bounds.clone()
     }
 
-    fn intersect(&self, ray: &Ray) -> Option<Interaction> {
+    pub fn intersect(&self, ray: &Ray) -> Option<Interaction> {
         self.tree.intersect(ray)
     }
 
-    fn compute_scattering_functions(&self, interaction: &Interaction) -> BSDF {
-        unimplemented!("Don't compute from Aggregate");
-    }
-
-    fn does_intersect(&self, ray: &Ray) -> bool {
+    pub fn does_intersect(&self, ray: &Ray) -> bool {
         self.tree.does_intersect(ray)
-    }
-
-    fn mat<'a>(&'a self) -> Option<Arc<dyn Material + 'a>> {
-        unimplemented!("Don't get mat from an Aggregate")
-    }
-    fn area_light(&self) -> Option<Arc<AreaLight>> {
-        unimplemented!("Don't get area light from an Aggregate")
     }
 }

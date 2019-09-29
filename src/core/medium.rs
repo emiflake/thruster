@@ -5,7 +5,7 @@ use crate::sampler::Sampler;
 #[derive(Debug, Clone)]
 pub struct MediumInteraction;
 
-pub trait Medium: std::fmt::Debug {
+pub trait Medium: std::fmt::Debug + Send + Sync {
     fn tr(&self, ray: &Ray, sampler: &dyn Sampler) -> RGBSpectrum;
     fn sample(&self, ray: &Ray, sampler: &dyn Sampler) -> MediumInteraction;
 }

@@ -5,7 +5,7 @@ pub struct CameraSample {
     pub time: f64,
 }
 
-pub trait Camera {
+pub trait Camera: Send + Sync {
     fn generate_ray(&self, sample: &CameraSample) -> Ray;
 }
 

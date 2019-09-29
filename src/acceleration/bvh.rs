@@ -234,12 +234,15 @@ impl BVHBuildNode {
 
 /// A BVH-based Accelerator struct, used for constructing BVHTrees
 pub struct BVHAccel {
-    primitives: Vec<Arc<dyn Primitive>>,
+    primitives: Vec<Arc<dyn Primitive + Sync + Send>>,
     algorithm: BVHConstructionAlgorithm,
 }
 
 impl BVHAccel {
-    pub fn new(algorithm: BVHConstructionAlgorithm, primitives: Vec<Arc<dyn Primitive>>) -> Self {
+    pub fn new(
+        algorithm: BVHConstructionAlgorithm,
+        primitives: Vec<Arc<dyn Primitive + Sync + Send>>,
+    ) -> Self {
         Self {
             primitives,
             algorithm,
@@ -275,7 +278,7 @@ impl BVHAccel {
         &self,
         primitive_info: &mut [BVHPrimitiveInfo],
         total_nodes: &mut usize,
-        ordered_shapes: &mut Vec<Arc<dyn Primitive>>,
+        ordered_shapes: &mut Vec<Arc<dyn Primitive + Sync + Send>>,
     ) -> BVHBuildNode {
         assert!(!primitive_info.is_empty());
         *total_nodes += 1;
@@ -353,7 +356,7 @@ impl BVHAccel {
 pub struct BVHLinearTree {
     pub bounds: BoundingBox,
     pub linear_nodes: Vec<BVHLinearNode>,
-    pub primitives: Vec<Arc<dyn Primitive>>,
+    pub primitives: Vec<Arc<dyn Primitive + Sync + Send>>,
 }
 
 /// A compacted BVHNode for use in indexing
@@ -471,11 +474,11 @@ impl BVHLinearTree {
                 if n.primitive_amount > 0 {
                     for i in 0..n.primitive_amount {
                         let prim = &self.primitives[i + n.node_content];
-                        if let Some(interaction) = prim.intersect(ray) {
-                            //let interaction = Interaction {
-                            //geom: intersection,
-                            //primitive: Arc::clone(prim),
-                            //};
+                        if let Some(geom) = prim.intersect(ray) {
+                            let interaction = Interaction {
+                                geom,
+                                primitive: Arc::clone(prim),
+                            };
                             closest = match closest {
                                 None => Some(interaction),
                                 Some(closest) => Some(closest.nearest(interaction)),

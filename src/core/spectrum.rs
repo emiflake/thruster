@@ -39,6 +39,26 @@ impl RGBSpectrum {
             *s += o / f64::from(spp as u32);
         }
     }
+
+    pub fn clamp(&mut self) {
+        self.rgb.iter_mut().for_each(|s| {
+            *s = if *s > 255.0 {
+                255.0
+            } else if *s < 0.0 {
+                0.0
+            } else {
+                *s
+            };
+        });
+    }
+
+    pub fn mul_with(&self, rhs: RGBSpectrum) -> RGBSpectrum {
+        RGBSpectrum::from_rgb(
+            (self[0] / 255.0 * rhs[0] / 255.0) * 255.0,
+            (self[1] / 255.0 * rhs[1] / 255.0) * 255.0,
+            (self[2] / 255.0 * rhs[2] / 255.0) * 255.0,
+        )
+    }
 }
 
 impl FromIterator<f64> for RGBSpectrum {
