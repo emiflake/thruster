@@ -170,10 +170,23 @@ impl Vec3 {
         Rgba([self.x as u8, self.y as u8, self.z as u8, 255])
     }
 
+    /*
+     *Vec3f uniformSampleHemisphere(const float &r1, const float &r2)
+    {
+        // cos(theta) = r1 = y
+        // cos^2(theta) + sin^2(theta) = 1 -> sin(theta) = srtf(1 - cos^2(theta))
+        float sinTheta = sqrtf(1 - r1 * r1);
+        float phi = 2 * M_PI * r2;
+        float x = sinTheta * cosf(phi);
+        float z = sinTheta * sinf(phi);
+        return Vec3f(x, u1, z);
+    }
+    */
+
     pub fn hemisphere(u: f64, v: f64) -> Vec3 {
-        let r = (1.0 - u * u).sqrt();
+        let sin_theta = (1.0 - u * u).sqrt();
         let phi = 2.0 * std::f64::consts::PI * v;
-        Vec3::new(phi.cos() * r, phi.sin() * r, u)
+        Vec3::new(phi.cos() * sin_theta, u, phi.sin() * sin_theta)
     }
 
     /// Rotate a Vector with the angles of another Vector

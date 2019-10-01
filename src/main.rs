@@ -35,7 +35,7 @@ pub fn main() -> std::result::Result<(), String> {
 
     let prims: Vec<Arc<dyn Primitive + Send + Sync>> = vec![
         Arc::new(GeometricPrimitive {
-            emission: RGBSpectrum::from_rgb(0.0, 0.0, 0.0),
+            emission: RGBSpectrum::from_rgb(0.0, 0.0, 255.0),
             material: Arc::new(Matte {
                 kd: Arc::new(ConstantTexture::new(RGBSpectrum::from_rgb(
                     255.0, 10.0, 10.0,
@@ -103,6 +103,22 @@ pub fn main() -> std::result::Result<(), String> {
                 ))),
             }),
             shape: Arc::new(Plane::new(
+                Point3::new(0.0, 0.0, -5.0),
+                Normal::new(0.0, 0.0, 1.0),
+            )),
+            medium_interface: MediumInterface {
+                inside: Box::new(ex_medium.clone()),
+                outside: Box::new(ex_medium.clone()),
+            },
+        }),
+        Arc::new(GeometricPrimitive {
+            emission: RGBSpectrum::from_rgb(0.0, 0.0, 0.0),
+            material: Arc::new(Matte {
+                kd: Arc::new(ConstantTexture::new(RGBSpectrum::from_rgb(
+                    255.0, 255.0, 255.0,
+                ))),
+            }),
+            shape: Arc::new(Plane::new(
                 Point3::new(0.0, 0.0, 20.0),
                 Normal::new(0.0, 0.0, -1.0),
             )),
@@ -128,13 +144,13 @@ pub fn main() -> std::result::Result<(), String> {
             },
         }),
         Arc::new(GeometricPrimitive {
-            emission: RGBSpectrum::from_rgb(255.0, 255.0, 255.0) * 2.5,
+            emission: RGBSpectrum::from_rgb(255.0, 255.0, 255.0) * 3.0,
             material: Arc::new(Matte {
                 kd: Arc::new(ConstantTexture::new(RGBSpectrum::from_rgb(
                     255.0, 255.0, 255.0,
                 ))),
             }),
-            shape: Arc::new(Sphere::new(Point3::new(0.0, 20.0, 15.0), 5.0)),
+            shape: Arc::new(Sphere::new(Point3::new(0.0, 10.0, 15.0), 5.0)),
             medium_interface: MediumInterface {
                 inside: Box::new(ex_medium.clone()),
                 outside: Box::new(ex_medium.clone()),
@@ -146,10 +162,10 @@ pub fn main() -> std::result::Result<(), String> {
 
     let scene = Scene::new(Arc::new(aggregate), Vec::new());
 
-    let mut sampler_const = RandomSamplerConstructor::new(100);
+    let mut sampler_const = RandomSamplerConstructor::new(32);
 
-    let screen_dimensions = Vec2::new(1280.0, 720.0);
-
+    let screen_dimensions = Vec2::new(1920.0, 1080.0);
+    // 3840 x 2160
     let mut camera = PerspectiveCamera::new(
         Transform::rotate_x(0.0)
             * Transform::rotate_y(0.0)
@@ -164,6 +180,8 @@ pub fn main() -> std::result::Result<(), String> {
     };
 
     renderer.render_scene(&scene, (), &mut render_out);
+
+    render_out.save("output-noisy.png");
 
     render_out.denoise();
 

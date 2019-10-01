@@ -40,6 +40,16 @@ pub struct BasicRenderer<'a> {
     pub camera: Arc<dyn Camera + 'a>,
 }
 
+// TODO: move this
+fn create_coordinate_system(n: &Vec3) -> (Vec3, Vec3) {
+    let nt = if n.x.abs() > n.y.abs() {
+        Vec3::new(n.z, 0.0, -n.x) / (n.x * n.x + n.z * n.z).sqrt()
+    } else {
+        Vec3::new(0.0, -n.z, n.y) / (n.y * n.y + n.z * n.z).sqrt()
+    };
+    (nt, comb::cross(&nt, n))
+}
+
 impl<'a> BasicRenderer<'a> {
     pub fn new(sampler_const: RandomSamplerConstructor, camera: Arc<dyn Camera + 'a>) -> Self {
         Self {
@@ -65,10 +75,15 @@ impl<'a> BasicRenderer<'a> {
 
                 match isect.compute_scattering_functions(ray) {
                     BRDF::Matte => {
+                        let (nt, nb) = create_coordinate_system(&Vec3::from(isect.geom.normal));
                         let uv = samp.get_2d();
                         let hemi = Vec3::hemisphere(uv.x, uv.y);
-                        let rd: Vec3 = Vec3::from(isect.geom.normal) + hemi;
-                        let ray = Ray::new(isect.geom.origin, rd);
+                        let sample_world = Vec3::new(
+                            hemi.x * nb.x + hemi.y * isect.geom.normal.x + hemi.z * nt.x,
+                            hemi.x * nb.y + hemi.y * isect.geom.normal.y + hemi.z * nt.y,
+                            hemi.x * nb.z + hemi.y * isect.geom.normal.z + hemi.z * nt.z,
+                        );
+                        let ray = Ray::new(isect.geom.origin, sample_world);
                         col += self
                             .li(&ray, scene, depth - 1, samp)
                             .mul_with(isect.primitive.mat().albedo(&Point2::new(0.0, 0.0)));

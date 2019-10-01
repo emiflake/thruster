@@ -2,6 +2,7 @@
 
 extern crate image;
 extern crate rand;
+extern crate rayon;
 extern crate scoped_threadpool;
 
 extern crate glutin;

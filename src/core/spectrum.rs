@@ -95,6 +95,13 @@ impl std::ops::Mul<f64> for RGBSpectrum {
     }
 }
 
+impl std::ops::Div<f64> for RGBSpectrum {
+    type Output = RGBSpectrum;
+    fn div(self, rhs: f64) -> Self {
+        self.iter().map(|s| s / rhs).collect()
+    }
+}
+
 impl std::ops::Add<RGBSpectrum> for RGBSpectrum {
     type Output = RGBSpectrum;
     fn add(self, rhs: Self) -> Self {
