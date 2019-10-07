@@ -1,6 +1,6 @@
 [package]
 name = "thruster"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Emily Martins <emily.flakeheart@gmail.com>"]
 edition = "2018"
 
