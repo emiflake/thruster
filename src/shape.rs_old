@@ -1,0 +1,297 @@
+use crate::algebra::prelude::*;
+use crate::material::Material;
+
+use serde_derive::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Shape {
+    Sphere(Sphere),
+    Plane(Plane),
+    Triangle(Triangle),
+}
+
+impl SceneObject for Shape {
+    fn mat(&self) -> &Material {
+        match self {
+            Self::Sphere(s) => s.mat(),
+            Self::Plane(s) => s.mat(),
+            Self::Triangle(s) => s.mat(),
+        }
+    }
+
+    fn mat_mut(&mut self) -> &mut Material {
+        match self {
+            Self::Sphere(s) => s.mat_mut(),
+            Self::Plane(s) => s.mat_mut(),
+            Self::Triangle(s) => s.mat_mut(),
+        }
+    }
+
+    fn do_intersect(&self, ray: &Ray) -> Option<Intersection> {
+        match self {
+            Self::Sphere(s) => s.do_intersect(ray),
+            Self::Plane(s) => s.do_intersect(ray),
+            Self::Triangle(s) => s.do_intersect(ray),
+        }
+    }
+
+    fn bounding_box(&self) -> BoundingBox {
+        match self {
+            Self::Sphere(s) => s.bounding_box(),
+            Self::Plane(s) => s.bounding_box(),
+            Self::Triangle(s) => s.bounding_box(),
+        }
+    }
+
+    fn draw_ui(&mut self, ui: &imgui::Ui) {
+        match self {
+            Self::Sphere(s) => s.draw_ui(ui),
+            Self::Plane(s) => s.draw_ui(ui),
+            Self::Triangle(s) => s.draw_ui(ui),
+        }
+    }
+}
+
+/// This trait describes what an object must be able to do in order to fit in our scene.
+pub trait SceneObject {
+    /// Get the material ref as a mutable
+    fn mat_mut(&mut self) -> &mut Material;
+
+    /// Get the material ref
+    fn mat(&self) -> &Material;
+
+    /// Whether or not object intersects with the ray
+    fn do_intersect(&self, ray: &Ray) -> Option<Intersection>;
+
+    /// Calculate the [BoundingBox](struct.BoundingBox.html0
+    fn bounding_box(&self) -> BoundingBox;
+
+    /// Draw the UI widget for modifying objects
+    fn draw_ui(&mut self, ui: &imgui::Ui);
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Sphere {
+    pub origin: Vec3,
+    pub radius: f64,
+
+    pub material: Material,
+}
+
+impl SceneObject for Sphere {
+    fn mat(&self) -> &Material {
+        &self.material
+    }
+
+    fn mat_mut(&mut self) -> &mut Material {
+        &mut self.material
+    }
+
+    fn do_intersect(&self, ray: &Ray) -> Option<Intersection> {
+        let local_ray = self.origin - ray.origin;
+        let tca = comb::dot(&local_ray, &ray.direction);
+        if tca < 0.0 {
+            return None;
+        }
+        let d2 = local_ray.length2() - tca * tca;
+        if d2 > self.radius * self.radius {
+            return None;
+        }
+        let thc = (self.radius * self.radius - d2).sqrt();
+        let t0 = tca - thc;
+        let t1 = tca + thc;
+        if t0 < 0.0 && t1 < 0.0 {
+            return None;
+        }
+        let t = if t0 < 0.0 {
+            t1
+        } else if t1 < 0.0 {
+            t0
+        } else {
+            t0.min(t1)
+        };
+        if t <= 0.0 {
+            return None;
+        }
+        let p = ray.origin + (ray.direction * t);
+        let normal = (p - self.origin).normalized();
+        let text_pos = Vec2::new(
+            0.5 + normal.z.atan2(normal.x) / std::f64::consts::PI / 2.0,
+            0.5 - normal.y.asin() / std::f64::consts::PI,
+        );
+        Some(Intersection {
+            t,
+            origin: p,
+            normal,
+            text_pos,
+        })
+    }
+
+    fn bounding_box(&self) -> BoundingBox {
+        BoundingBox {
+            min_vector: Point3::from(self.origin) - Vec3::new(1.0, 1.0, 1.0) * self.radius,
+            max_vector: Point3::from(self.origin) + Vec3::new(1.0, 1.0, 1.0) * self.radius,
+        }
+    }
+
+    fn draw_ui(&mut self, ui: &imgui::Ui) {
+        let mut xyz = [
+            self.origin.x as f32,
+            self.origin.y as f32,
+            self.origin.z as f32,
+        ];
+        let mut radius = self.radius as f32;
+        ui.text("Sphere");
+        ui.separator();
+        ui.input_float3(im_str!("Sphere Position"), &mut xyz)
+            .build();
+        ui.input_float(im_str!("Sphere Radius"), &mut radius)
+            .build();
+        self.origin.x = f64::from(xyz[0]);
+        self.origin.y = f64::from(xyz[1]);
+        self.origin.z = f64::from(xyz[2]);
+        self.radius = f64::from(radius);
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Plane {
+    pub origin: Vec3,
+    pub normal: Vec3,
+
+    pub material: Material,
+}
+
+impl SceneObject for Plane {
+    fn mat(&self) -> &Material {
+        &self.material
+    }
+
+    fn mat_mut(&mut self) -> &mut Material {
+        &mut self.material
+    }
+
+    fn do_intersect(&self, ray: &Ray) -> Option<Intersection> {
+        let t = comb::dot(&(self.origin - ray.origin), &self.normal)
+            / comb::dot(&self.normal, &ray.direction);
+        if t < 0.001 {
+            None
+        } else {
+            let p = ray.origin + (ray.direction * t);
+            let text_pos = Vec2::new(p.x, p.z);
+            Some(Intersection {
+                origin: p,
+                t,
+                normal: self.normal,
+                text_pos,
+            })
+        }
+    }
+
+    fn bounding_box(&self) -> BoundingBox {
+        let far = Vec3::new(100_000.0, 100_000.0, 100_000.0);
+
+        BoundingBox {
+            min_vector: Point3::from(self.origin - far + self.normal * far),
+            max_vector: Point3::from(self.origin + far - self.normal * far),
+        }
+    }
+
+    fn draw_ui(&mut self, ui: &imgui::Ui) {
+        ui.text("Plane");
+        ui.separator();
+        let mut p = [
+            self.origin.x as f32,
+            self.origin.y as f32,
+            self.origin.z as f32,
+        ];
+        let mut n = [
+            self.normal.x as f32,
+            self.normal.y as f32,
+            self.normal.z as f32,
+        ];
+        ui.input_float3(im_str!("Plane Position"), &mut p).build();
+        ui.input_float3(im_str!("Plane Normal"), &mut n).build();
+        self.origin.x = f64::from(p[0]);
+        self.origin.y = f64::from(p[1]);
+        self.origin.z = f64::from(p[2]);
+        self.normal.x = f64::from(n[0]);
+        self.normal.y = f64::from(n[1]);
+        self.normal.z = f64::from(n[2]);
+    }
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Triangle {
+    pub a: Vertex,
+    pub b: Vertex,
+    pub c: Vertex,
+
+    pub material: Material,
+}
+
+impl SceneObject for Triangle {
+    fn mat(&self) -> &Material {
+        &self.material
+    }
+
+    fn mat_mut(&mut self) -> &mut Material {
+        &mut self.material
+    }
+
+    fn do_intersect(&self, ray: &Ray) -> Option<Intersection> {
+        let ab = self.b.origin - self.a.origin;
+        let ac = self.c.origin - self.a.origin;
+
+        let pvec = comb::cross(&ray.direction, &ac);
+        let det = comb::dot(&ab, &pvec);
+
+        // TODO: Disable backface culling in config
+        //if det < std::f64::EPSILON {
+        //return None;
+        //}
+        if det.abs() < std::f64::EPSILON {
+            return None;
+        }
+        let inv_det = 1.0 / det;
+        let tvec = ray.origin - self.a.origin;
+        let u = comb::dot(&tvec, &pvec) * inv_det;
+        if u < 0.0 || u > 1.0 {
+            return None;
+        }
+        let qvec = comb::cross(&tvec, &ab);
+        let v = comb::dot(&ray.direction, &qvec) * inv_det;
+        if v < 0.0 || u + v > 1.0 {
+            return None;
+        }
+        let t = comb::dot(&ac, &qvec) * inv_det;
+        if t < 0.0 {
+            return None;
+        }
+        let p = ray.origin + ray.direction * t;
+
+        Some(Intersection {
+            origin: p,
+            t,
+            normal: self.a.normal.normalized() * (1.0 - u - v)
+                + self.b.normal.normalized() * u
+                + self.c.normal.normalized() * v,
+            text_pos: Vec2::new(
+                self.a.uv.x * (1.0 - u - v) + self.b.uv.x * u + self.c.uv.x * v,
+                self.a.uv.y * (1.0 - u - v) + self.b.uv.y * u + self.c.uv.y * v,
+            ),
+        })
+    }
+
+    fn bounding_box(&self) -> BoundingBox {
+        BoundingBox {
+            min_vector: Point3::from(self.a.origin.min(&self.b.origin).min(&self.c.origin)),
+            max_vector: Point3::from(self.a.origin.max(&self.b.origin).max(&self.c.origin)),
+        }
+    }
+
+    fn draw_ui(&mut self, ui: &imgui::Ui) {
+        ui.text("Triangle");
+    }
+}

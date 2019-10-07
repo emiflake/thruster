@@ -7,15 +7,17 @@
 
 use crate::acceleration::queue_systems::FastStack;
 use crate::algebra::prelude::*;
-use crate::shape::{Intersection, Ray, SceneObject, Shape};
+use crate::core::{interaction::Interaction, primitive::Primitive};
+use crate::geometry::shape::Shape;
 use crate::utils;
+use std::sync::Arc;
 
 use std::cmp::Ordering;
 
 /// Used to construct [BVHTree](struct.BVHTree.html)
 pub struct BVHPrimitiveInfo {
     pub bounding_box: BoundingBox,
-    pub centre: Vec3,
+    pub centre: Point3,
     pub index: usize,
 }
 
@@ -51,22 +53,20 @@ impl BVHConstructionAlgorithm {
     pub fn perform_partitioning(
         self,
         primitive_info: &mut [BVHPrimitiveInfo],
-        dimension: u32,
+        dimension: usize,
         aggregate_bounds: &BoundingBox,
         centroid_bounds: &BoundingBox,
     ) -> Option<usize> {
         match self {
             BVHConstructionAlgorithm::Middle => {
                 let len = primitive_info.len();
-                let pmid = (centroid_bounds.min_vector.dim(dimension)
-                    + centroid_bounds.max_vector.dim(dimension))
-                    / 2.0;
+                let pmid = (centroid_bounds.min[dimension] + centroid_bounds.max[dimension]) / 2.0;
                 let mut middle =
-                    utils::partition(primitive_info, |pi| pi.centre.dim(dimension) < pmid);
+                    utils::partition(primitive_info, |pi| pi.centre[(dimension)] < pmid);
                 if middle == 0 || middle == len {
                     middle = len / 2;
                     pdqselect::select_by(primitive_info, middle, |pa, pb| {
-                        if pa.centre.dim(dimension) > pb.centre.dim(dimension) {
+                        if pa.centre[(dimension)] > pb.centre[(dimension)] {
                             Ordering::Greater
                         } else {
                             Ordering::Less
@@ -78,7 +78,7 @@ impl BVHConstructionAlgorithm {
             BVHConstructionAlgorithm::Equal => {
                 let middle = primitive_info.len() / 2;
                 pdqselect::select_by(primitive_info, middle, |pa, pb| {
-                    if pa.centre.dim(dimension) < pb.centre.dim(dimension) {
+                    if pa.centre[(dimension)] < pb.centre[(dimension)] {
                         Ordering::Greater
                     } else {
                         Ordering::Less
@@ -94,7 +94,7 @@ impl BVHConstructionAlgorithm {
                 if len <= 4 {
                     let middle = len / 2;
                     pdqselect::select_by(primitive_info, middle, |pa, pb| {
-                        if pa.centre.dim(dimension) > pb.centre.dim(dimension) {
+                        if pa.centre[(dimension)] > pb.centre[(dimension)] {
                             Ordering::Greater
                         } else {
                             Ordering::Less
@@ -106,7 +106,7 @@ impl BVHConstructionAlgorithm {
                     let mut buckets: Vec<BucketInfo> = vec![BucketInfo::default(); bucket_amount];
                     for info in primitive_info.iter() {
                         let b = (f64::from(bucket_amount as u32)
-                            * centroid_bounds.offset(&info.centre).dim(dimension))
+                            * centroid_bounds.offset(&info.centre)[(dimension)])
                             as usize;
                         let b = if b == bucket_amount {
                             bucket_amount - 1
@@ -164,7 +164,7 @@ impl BVHConstructionAlgorithm {
                     if leaf_cost > 16 || minimum.0 < f64::from(leaf_cost as u32) {
                         let middle = utils::partition(primitive_info, |pi: &BVHPrimitiveInfo| {
                             let b = (f64::from(bucket_amount as u32)
-                                * centroid_bounds.offset(&pi.centre).dim(dimension))
+                                * centroid_bounds.offset(&pi.centre)[(dimension)])
                                 as usize;
                             let b = if b >= bucket_amount {
                                 bucket_amount - 1
@@ -197,7 +197,7 @@ pub struct BVHBuildNode {
     /// Index of the first primivite
     pub primitive_index: Option<usize>,
     /// Axis we split on for this node
-    pub split_axis: Option<u32>,
+    pub split_axis: Option<usize>,
     /// Bounding box of the node
     pub bounding_box: BoundingBox,
     /// Left child
@@ -220,7 +220,7 @@ impl BVHBuildNode {
     }
 
     /// Constructor helper for branches
-    pub fn new_branch(axis: u32, left: Box<BVHBuildNode>, right: Box<BVHBuildNode>) -> Self {
+    pub fn new_branch(axis: usize, left: Box<BVHBuildNode>, right: Box<BVHBuildNode>) -> Self {
         Self {
             primitive_amount: 0,
             primitive_index: None,
@@ -234,12 +234,15 @@ impl BVHBuildNode {
 
 /// A BVH-based Accelerator struct, used for constructing BVHTrees
 pub struct BVHAccel {
-    primitives: Vec<Shape>,
+    primitives: Vec<Arc<dyn Primitive + Sync + Send>>,
     algorithm: BVHConstructionAlgorithm,
 }
 
 impl BVHAccel {
-    pub fn new(algorithm: BVHConstructionAlgorithm, primitives: Vec<Shape>) -> Self {
+    pub fn new(
+        algorithm: BVHConstructionAlgorithm,
+        primitives: Vec<Arc<dyn Primitive + Sync + Send>>,
+    ) -> Self {
         Self {
             primitives,
             algorithm,
@@ -254,8 +257,8 @@ impl BVHAccel {
             let mut primitive_info = Vec::new();
             for (i, shape) in self.primitives.iter().enumerate() {
                 primitive_info.push(BVHPrimitiveInfo {
-                    bounding_box: shape.bounding_box(),
-                    centre: shape.bounding_box().centre(),
+                    bounding_box: shape.bounds(),
+                    centre: shape.bounds().centre(),
                     index: i,
                 });
             }
@@ -275,7 +278,7 @@ impl BVHAccel {
         &self,
         primitive_info: &mut [BVHPrimitiveInfo],
         total_nodes: &mut usize,
-        ordered_shapes: &mut Vec<Shape>,
+        ordered_shapes: &mut Vec<Arc<dyn Primitive + Sync + Send>>,
     ) -> BVHBuildNode {
         assert!(!primitive_info.is_empty());
         *total_nodes += 1;
@@ -295,12 +298,10 @@ impl BVHAccel {
             let centroid_bounds = primitive_info
                 .iter()
                 .fold(BoundingBox::EMPTY, |a: BoundingBox, b| {
-                    a.merge_with_vec(&b.centre)
+                    a.merge_with_point(&b.centre)
                 });
             let dimension = centroid_bounds.max_extent();
-            if (centroid_bounds.max_vector.dim(dimension)
-                - centroid_bounds.min_vector.dim(dimension))
-            .abs()
+            if (centroid_bounds.max[dimension] - centroid_bounds.min[dimension]).abs()
                 < std::f64::EPSILON
             {
                 // Centroid bounds are small, construct leaf node.
@@ -315,7 +316,6 @@ impl BVHAccel {
                 &aggregate_bounds,
                 &centroid_bounds,
             ) {
-                //println!("0 - {} - {}", middle, len);
                 BVHBuildNode::new_branch(
                     dimension,
                     Box::new(self.recursive_build(
@@ -340,7 +340,9 @@ impl BVHAccel {
     }
 
     pub fn flatten(self, node: Box<BVHBuildNode>, total_nodes: usize) -> BVHLinearTree {
+        let bounds = node.bounding_box.clone();
         let mut tree = BVHLinearTree {
+            bounds,
             linear_nodes: Vec::with_capacity(total_nodes),
             primitives: self.primitives,
         };
@@ -352,8 +354,9 @@ impl BVHAccel {
 
 #[derive(Debug)]
 pub struct BVHLinearTree {
+    pub bounds: BoundingBox,
     pub linear_nodes: Vec<BVHLinearNode>,
-    pub primitives: Vec<Shape>,
+    pub primitives: Vec<Arc<dyn Primitive + Sync + Send>>,
 }
 
 /// A compacted BVHNode for use in indexing
@@ -362,7 +365,7 @@ pub struct BVHLinearNode {
     pub bounding_box: BoundingBox,
     pub primitive_amount: usize,
     pub node_content: usize,
-    pub axis: u32,
+    pub axis: usize,
 }
 
 impl Default for BVHLinearNode {
@@ -408,26 +411,77 @@ impl BVHLinearTree {
         my_offset
     }
 
-    pub fn intersect(&self, ray: &Ray) -> Option<(Intersection, &Shape)> {
+    pub fn does_intersect(&self, ray: &Ray) -> bool {
+        let inv_dir = Vec3::new(
+            1.0 / ray.direction.x,
+            1.0 / ray.direction.y,
+            1.0 / ray.direction.z,
+        );
+        let sign = Vec3::new(
+            if ray.direction.x > 0.0 { 1.0 } else { 0.0 },
+            if ray.direction.y > 0.0 { 1.0 } else { 0.0 },
+            if ray.direction.z > 0.0 { 1.0 } else { 0.0 },
+        );
         let mut current_task = 0;
         let mut queue = FastStack::new();
-        let mut closest: Option<(Intersection, &Shape)> = None;
         loop {
             let n = &self.linear_nodes[current_task];
-            if n.bounding_box.intersects_with(ray) {
+            if n.bounding_box.does_intersect(ray) {
                 if n.primitive_amount > 0 {
                     for i in 0..n.primitive_amount {
                         let prim = &self.primitives[i + n.node_content];
-                        if let Some(intersection) = prim.do_intersect(ray) {
+                        if prim.does_intersect(ray) {
+                            return true;
+                        }
+                    }
+                    match queue.pop() {
+                        None => return false,
+                        Some(task) => current_task = task,
+                    };
+                } else if inv_dir[n.axis] < 0.0 {
+                    queue.push(current_task + 1);
+                    current_task = n.node_content;
+                } else {
+                    queue.push(n.node_content);
+                    current_task += 1;
+                }
+            } else {
+                match queue.pop() {
+                    None => return false,
+                    Some(task) => current_task = task,
+                };
+            }
+        }
+    }
+
+    pub fn intersect(&self, ray: &Ray) -> Option<Interaction> {
+        let inv_dir = Vec3::new(
+            1.0 / ray.direction.x,
+            1.0 / ray.direction.y,
+            1.0 / ray.direction.z,
+        );
+        let sign = Vec3::new(
+            if ray.direction.x > 0.0 { 1.0 } else { 0.0 },
+            if ray.direction.y > 0.0 { 1.0 } else { 0.0 },
+            if ray.direction.z > 0.0 { 1.0 } else { 0.0 },
+        );
+        let mut current_task = 0;
+        let mut queue = FastStack::new();
+        let mut closest: Option<Interaction> = None;
+        loop {
+            let n = &self.linear_nodes[current_task];
+            if n.bounding_box.does_intersect(ray) {
+                if n.primitive_amount > 0 {
+                    for i in 0..n.primitive_amount {
+                        let prim = &self.primitives[i + n.node_content];
+                        if let Some(geom) = prim.intersect(ray) {
+                            let interaction = Interaction {
+                                geom,
+                                primitive: Arc::clone(prim),
+                            };
                             closest = match closest {
-                                Some(i) => {
-                                    if intersection.t < i.0.t {
-                                        Some((intersection, prim))
-                                    } else {
-                                        Some(i)
-                                    }
-                                }
-                                _ => Some((intersection, prim)),
+                                None => Some(interaction),
+                                Some(closest) => Some(closest.nearest(interaction)),
                             }
                         }
                     }
@@ -435,7 +489,7 @@ impl BVHLinearTree {
                         None => return closest,
                         Some(task) => current_task = task,
                     };
-                } else if ray.inv_dir.dim(n.axis) < 0.0 {
+                } else if inv_dir[n.axis] < 0.0 {
                     queue.push(current_task + 1);
                     current_task = n.node_content;
                 } else {

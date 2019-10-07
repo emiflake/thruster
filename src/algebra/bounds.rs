@@ -1,5 +1,5 @@
 use crate::algebra::prelude::*;
-use crate::shape::Ray;
+use serde::{Deserialize, Serialize};
 
 /// A Bounding Box to represent the maximum range of an object, this is useful for Ray intersection
 /// checking since it will guarantee that any Ray that can intersect the object, will also
@@ -9,19 +9,19 @@ use crate::shape::Ray;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BoundingBox {
     /// The vector containing the low values of the bounding box
-    pub min_vector: Vec3,
+    pub min: Point3,
     /// The vector containing the high values of the bounding box
-    pub max_vector: Vec3,
+    pub max: Point3,
 }
 
 impl BoundingBox {
     pub const EMPTY: Self = Self {
-        min_vector: Vec3 {
+        min: Point3 {
             x: std::f64::MAX,
             y: std::f64::MAX,
             z: std::f64::MAX,
         },
-        max_vector: Vec3 {
+        max: Point3 {
             x: std::f64::MIN,
             y: std::f64::MIN,
             z: std::f64::MIN,
@@ -30,61 +30,26 @@ impl BoundingBox {
 
     // TODO: take a look at this
     /// Extract a bound
-    fn bounds(&self, sign: f64) -> Vec3 {
+    fn bounds(&self, sign: f64) -> Point3 {
         if sign >= 1.0 {
-            self.min_vector
+            self.min
         } else {
-            self.max_vector
+            self.max
         }
     }
 
     /// Get the centre of the BoundingBox
-    pub fn centre(&self) -> Vec3 {
-        (self.min_vector + self.max_vector) / 2.0
-    }
-
-    /// Check if the BoundingBox intersects with a Ray; used during acceleration
-    pub fn intersects_with(&self, ray: &Ray) -> bool {
-        let mut tmin = (self.bounds(ray.sign.x).x - ray.origin.x) * ray.inv_dir.x;
-        let mut tmax = (self.bounds(1.0 - ray.sign.x).x - ray.origin.x) * ray.inv_dir.x;
-        let tymin = (self.bounds(ray.sign.y).y - ray.origin.y) * ray.inv_dir.y;
-        let tymax = (self.bounds(1.0 - ray.sign.y).y - ray.origin.y) * ray.inv_dir.y;
-
-        if (tmin > tymax) || (tymin > tmax) {
-            return false;
-        }
-
-        if tymin > tmin {
-            tmin = tymin;
-        }
-        if tymax < tmax {
-            tmax = tymax;
-        }
-
-        let tzmin = (self.bounds(ray.sign.z).z - ray.origin.z) * ray.inv_dir.z;
-        let tzmax = (self.bounds(1.0 - ray.sign.z).z - ray.origin.z) * ray.inv_dir.z;
-
-        if (tmin > tzmax) || (tzmin > tmax) {
-            return false;
-        }
-
-        if tzmin > tmin {
-            tmin = tzmin;
-        }
-        if tzmax < tmax {
-            tmax = tzmax;
-        }
-
-        tmin >= 0.0 || tmax >= 0.0
+    pub fn centre(&self) -> Point3 {
+        (self.min + self.max) / 2.0
     }
 
     /// Get the diagonal vector from min to max
     pub fn diagonal(&self) -> Vec3 {
-        self.max_vector - self.min_vector
+        self.max - self.min
     }
 
     /// Returns the dimension for which the box's extent is biggest
-    pub fn max_extent(&self) -> u32 {
+    pub fn max_extent(&self) -> usize {
         let diag = self.diagonal();
         if diag.x > diag.y && diag.x > diag.z {
             0
@@ -98,28 +63,36 @@ impl BoundingBox {
     /// Merge two BoundingBox by joining them
     pub fn merge(&self, other: &BoundingBox) -> Self {
         Self {
-            min_vector: self.min_vector.min(&other.min_vector),
-            max_vector: self.max_vector.max(&other.max_vector),
+            min: self.min.min(&other.min),
+            max: self.max.max(&other.max),
         }
     }
 
     pub fn merge_with_vec(&self, v: &Vec3) -> Self {
+        let p = Point3::from(*v);
         Self {
-            min_vector: self.min_vector.min(v),
-            max_vector: self.max_vector.max(v),
+            min: self.min.min(&p),
+            max: self.max.max(&p),
         }
     }
 
-    pub fn offset(&self, v: &Vec3) -> Vec3 {
-        let mut o = *v - self.min_vector;
-        if self.max_vector.x > self.min_vector.x {
-            o.x /= self.max_vector.x - self.min_vector.x;
+    pub fn merge_with_point(&self, v: &Point3) -> Self {
+        Self {
+            min: self.min.min(v),
+            max: self.max.max(v),
         }
-        if self.max_vector.y > self.min_vector.y {
-            o.y /= self.max_vector.y - self.min_vector.y;
+    }
+
+    pub fn offset(&self, v: &Point3) -> Vec3 {
+        let mut o = *v - self.min;
+        if self.max.x > self.min.x {
+            o.x /= self.max.x - self.min.x;
         }
-        if self.max_vector.z > self.min_vector.z {
-            o.z /= self.max_vector.z - self.min_vector.z;
+        if self.max.y > self.min.y {
+            o.y /= self.max.y - self.min.y;
+        }
+        if self.max.z > self.min.z {
+            o.z /= self.max.z - self.min.z;
         }
         o
     }
@@ -127,5 +100,66 @@ impl BoundingBox {
     pub fn surface_area(&self) -> f64 {
         let d = self.diagonal();
         2.0 * (d.x * d.y + d.x * d.z + d.y * d.z)
+    }
+}
+
+use crate::geometry::geometry_information::GeometryInformation;
+use crate::geometry::shape::Shape;
+
+impl Shape for BoundingBox {
+    fn bounds(&self) -> Self {
+        self.clone()
+    }
+
+    fn intersect(&self, ray: &Ray) -> Option<GeometryInformation> {
+        // Leave unimplemented
+        // TODO: come up with better solution
+        unimplemented!("Intersection is not valid for Bounds");
+    }
+
+    fn does_intersect(&self, ray: &Ray) -> bool {
+        // TODO: take a look at inv_dir infinites
+        let inv_dir = Vec3::new(
+            1.0 / ray.direction.x,
+            1.0 / ray.direction.y,
+            1.0 / ray.direction.z,
+        );
+        let sign = Vec3::new(
+            if ray.direction.x > 0.0 { 1.0 } else { 0.0 },
+            if ray.direction.y > 0.0 { 1.0 } else { 0.0 },
+            if ray.direction.z > 0.0 { 1.0 } else { 0.0 },
+        );
+
+        let mut tmin = (self.bounds(sign.x).x - ray.origin.x) * inv_dir.x;
+        let mut tmax = (self.bounds(1.0 - sign.x).x - ray.origin.x) * inv_dir.x;
+        let tymin = (self.bounds(sign.y).y - ray.origin.y) * inv_dir.y;
+        let tymax = (self.bounds(1.0 - sign.y).y - ray.origin.y) * inv_dir.y;
+
+        if (tmin > tymax) || (tymin > tmax) {
+            return false;
+        }
+
+        if tymin > tmin {
+            tmin = tymin;
+        }
+        if tymax < tmax {
+            tmax = tymax;
+        }
+
+        let tzmin = (self.bounds(sign.z).z - ray.origin.z) * inv_dir.z;
+        let tzmax = (self.bounds(1.0 - sign.z).z - ray.origin.z) * inv_dir.z;
+
+        if (tmin > tzmax) || (tzmin > tmax) {
+            return false;
+        }
+
+        if tzmin > tmin {
+            tmin = tzmin;
+        }
+        if tzmax < tmax {
+            tmax = tzmax;
+        }
+
+        tmin >= 0.0 || tmax >= 0.0
     }
 }

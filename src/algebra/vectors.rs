@@ -1,3 +1,4 @@
+use crate::algebra::prelude::*;
 use image::{Pixel, Rgb, Rgba};
 use serde_derive::{Deserialize, Serialize};
 
@@ -13,6 +14,10 @@ impl Vec2 {
     pub const fn new(x: f64, y: f64) -> Vec2 {
         Vec2 { x, y }
     }
+
+    pub fn has_nans(&self) -> bool {
+        self.x.is_nan() || self.y.is_nan()
+    }
 }
 
 /// A standard f64 3-dimensional Vector struct
@@ -22,6 +27,18 @@ pub struct Vec3 {
     pub x: f64,
     pub y: f64,
     pub z: f64,
+}
+
+impl From<Point3> for Vec3 {
+    fn from(v: Point3) -> Self {
+        Self::new(v.x, v.y, v.z)
+    }
+}
+
+impl From<Normal> for Vec3 {
+    fn from(p: Normal) -> Self {
+        Self::new(p.x, p.y, p.z)
+    }
 }
 
 impl std::ops::Sub<Vec3> for Vec3 {
@@ -73,31 +90,6 @@ impl std::ops::Neg for Vec3 {
     }
 }
 
-/// Make an object clampable between two instances of itself
-/// # Example:
-/// ```
-/// use thruster::algebra::vectors::Clampable;
-/// println!("{}", (5f64).clamp_to(2.0, 10.0));
-/// //=>  2.0
-/// println!("{}", (14f64).clamp_to(2.0, 10.0));
-/// //=> 10.0
-/// ```
-pub trait Clampable {
-    fn clamp_to(self, min: Self, max: Self) -> Self;
-}
-
-impl Clampable for f64 {
-    fn clamp_to(self, min: f64, max: f64) -> f64 {
-        if self > max {
-            return max;
-        }
-        if self < min {
-            return min;
-        }
-        self
-    }
-}
-
 impl Vec3 {
     /// The origin Vector (0.0, 0.0, 0.0)
     pub const ORIGIN: Self = Vec3 {
@@ -105,6 +97,10 @@ impl Vec3 {
         y: 0.0,
         z: 0.0,
     };
+
+    pub fn has_nans(&self) -> bool {
+        self.x.is_nan() || self.y.is_nan() || self.z.is_nan()
+    }
 
     pub const fn new(x: f64, y: f64, z: f64) -> Self {
         Vec3 { x, y, z }
@@ -119,12 +115,6 @@ impl Vec3 {
     /// The magnitude/length of a Vector
     pub fn length(&self) -> f64 {
         self.length2().sqrt()
-    }
-
-    /// The dot product between two Vectors
-    /// Represents the 'difference' in angle.
-    pub fn dot(&self, rhs: &Vec3) -> f64 {
-        self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
     }
 
     /// Normalize the Vector towards a unit Vector.
@@ -149,15 +139,6 @@ impl Vec3 {
     /// Clamp the Vector's values to [0.0, 255.0]
     pub fn clamp_as_color(&self) -> Self {
         self.clamp_to(Vec3::ORIGIN, Vec3::new(255.0, 255.0, 255.0))
-    }
-
-    /// The cross product between two vectors
-    pub fn cross_product(&self, other: &Vec3) -> Vec3 {
-        Vec3::new(
-            self.y * other.z - self.z * other.y,
-            self.z * other.x - self.x * other.z,
-            self.x * other.y - self.y * other.x,
-        )
     }
 
     /// Map a function over each of the Vector's values
@@ -187,6 +168,25 @@ impl Vec3 {
 
     pub fn to_rgba(self) -> Rgba<u8> {
         Rgba([self.x as u8, self.y as u8, self.z as u8, 255])
+    }
+
+    /*
+     *Vec3f uniformSampleHemisphere(const float &r1, const float &r2)
+    {
+        // cos(theta) = r1 = y
+        // cos^2(theta) + sin^2(theta) = 1 -> sin(theta) = srtf(1 - cos^2(theta))
+        float sinTheta = sqrtf(1 - r1 * r1);
+        float phi = 2 * M_PI * r2;
+        float x = sinTheta * cosf(phi);
+        float z = sinTheta * sinf(phi);
+        return Vec3f(x, u1, z);
+    }
+    */
+
+    pub fn hemisphere(u: f64, v: f64) -> Vec3 {
+        let sin_theta = (1.0 - u * u).sqrt();
+        let phi = 2.0 * std::f64::consts::PI * v;
+        Vec3::new(phi.cos() * sin_theta, u, phi.sin() * sin_theta)
     }
 
     /// Rotate a Vector with the angles of another Vector
@@ -312,6 +312,41 @@ impl Vertex {
     }
 }
 
+impl std::ops::Index<usize> for Vec3 {
+    type Output = f64;
+    fn index(&self, i: usize) -> &Self::Output {
+        match i {
+            0 => &self.x,
+            1 => &self.y,
+            2 => &self.z,
+            _ => panic!("Dimension {} invalid while indexing 3D type", i),
+        }
+    }
+}
+
+impl std::ops::IndexMut<usize> for Vec3 {
+    fn index_mut(&mut self, i: usize) -> &mut Self::Output {
+        match i {
+            0 => &mut self.x,
+            1 => &mut self.y,
+            2 => &mut self.z,
+            _ => panic!("Dimension {} invalid while indexing 3D type", i),
+        }
+    }
+}
+
+impl Transformable for Vec3 {
+    fn apply_t(self, trans: &Transform) -> Self {
+        let Self { x, y, z } = self;
+        let Transform { mat, inv_mat } = trans;
+        Vec3::new(
+            mat.at(0, 0) * x + mat.at(0, 1) * y + mat.at(0, 2) * z,
+            mat.at(1, 0) * x + mat.at(1, 1) * y + mat.at(1, 2) * z,
+            mat.at(2, 0) * x + mat.at(2, 1) * y + mat.at(2, 2) * z,
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -330,17 +365,6 @@ mod tests {
         assert_eq!(Vec3::new(0.5, 2.5, 0.0) * 2.0, Vec3::new(1.0, 5.0, 0.0));
 
         assert_eq!(5.0 * Vec3::new(1.0, 2.0, 3.0), Vec3::new(5.0, 10.0, 15.0));
-    }
-
-    #[test]
-    fn dot_product() {
-        assert_eq!(Vec3::new(1.0, 5.0, 3.0).dot(&Vec3::new(2.0, 0.0, 0.0)), 2.0);
-        assert_eq!(Vec3::new(0.0, 1.0, 0.0).dot(&Vec3::new(0.0, 1.0, 0.0)), 1.0);
-        assert_eq!(Vec3::new(0.0, 0.0, 1.0).dot(&Vec3::new(0.0, 1.0, 0.0)), 0.0);
-        assert_eq!(
-            Vec3::new(0.0, -1.0, 0.0).dot(&Vec3::new(0.0, 1.0, 0.0)),
-            -1.0
-        );
     }
 
     #[test]

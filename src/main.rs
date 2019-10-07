@@ -1,110 +1,191 @@
 #![allow(unused_variables)]
 
+use image::ImageBuffer;
+use log::info;
+use std::sync::{Arc, Mutex};
 use thruster::algebra::prelude::*;
-use thruster::app;
-use thruster::material::{MatTex, Material, Reflectivity, Transparency};
-use thruster::parser;
-use thruster::scene::Scene;
-use thruster::shape::{Shape, Triangle};
-use thruster::texture_map;
+use thruster::core::{
+    aggregate::Aggregate,
+    camera::{Camera, PerspectiveCamera},
+    material::{Material, Matte},
+    medium::{HomogeneousMedium, Medium, MediumInterface},
+    primitive::{GeometricPrimitive, Primitive},
+    renderer::{BasicRenderer, RenderOutput, Renderer},
+    scene::Scene,
+    spectrum::RGBSpectrum,
+    texture::{ConstantTexture, Texture},
+};
+use thruster::denoise::Denoiser;
+use thruster::geometry::{plane::Plane, shape::Shape, sphere::Sphere};
+use thruster::light::area_light::AreaLight;
+use thruster::logger;
+use thruster::sampler::{RandomSamplerConstructor, Sampler};
 
 pub fn main() -> std::result::Result<(), String> {
-    let texture_map = texture_map::TextureMap::new();
+    logger::init().expect("Could not initialize logger");
 
-    let scn_str =
-        std::fs::read_to_string("cfg.ron").expect("Could not read configuration file 'cfg.ron'");
-    let mut scene: Scene = ron::de::from_str(&scn_str).expect("Could not parse 'cfg.ron'");
+    info!("Hewo user~! Wewcome to tuwuster!");
 
-    let obj =
-        parser::parse("./objs/codam-text-high.obj".to_string()).expect("Could not parse .obj");
-    for (a, b, c) in obj.tris.iter() {
-        let a = Vertex {
-            origin: a.origin.rotate_around(0, std::f64::consts::FRAC_PI_2)
-                - Vec3::new(0.0, 0.0, 1.0),
-            normal: a.normal.rotate_around(0, std::f64::consts::FRAC_PI_2),
-            uv: a.uv,
-        };
-        let b = Vertex {
-            origin: b.origin.rotate_around(0, std::f64::consts::FRAC_PI_2)
-                - Vec3::new(0.0, 0.0, 1.0),
-            normal: b.normal.rotate_around(0, std::f64::consts::FRAC_PI_2),
-            uv: b.uv,
-        };
-        let c = Vertex {
-            origin: c.origin.rotate_around(0, std::f64::consts::FRAC_PI_2)
-                - Vec3::new(0.0, 0.0, 1.0),
-            normal: c.normal.rotate_around(0, std::f64::consts::FRAC_PI_2),
-            uv: c.uv,
-        };
+    let ex_medium = HomogeneousMedium {
+        sigma_a: RGBSpectrum::from_rgb(255.0, 255.0, 255.0),
+        sigma_s: RGBSpectrum::from_rgb(255.0, 255.0, 255.0),
+        sigma_t: RGBSpectrum::from_rgb(255.0, 255.0, 255.0),
+        g: 1.0,
+    };
 
-        scene.shapes.push(Shape::Triangle(Triangle {
-            a,
-            b,
-            c,
-            material: Material {
-                texture: MatTex::Color(Vec3::new(255.0, 255.0, 255.0)),
-                c_ambient: 0.3,
-                c_diffuse: 0.3,
-                reflectivity: Reflectivity {
-                    amount: 0.4,
-                    blurriness: 1.0,
-                },
-                transparency: Transparency {
-                    amount: 0.0,
-                    blurriness: 0.0,
-                    index_of_refraction: 1.0,
-                },
+    let prims: Vec<Arc<dyn Primitive + Send + Sync>> = vec![
+        Arc::new(GeometricPrimitive {
+            emission: RGBSpectrum::from_rgb(0.0, 0.0, 255.0),
+            material: Arc::new(Matte {
+                kd: Arc::new(ConstantTexture::new(RGBSpectrum::from_rgb(
+                    255.0, 10.0, 10.0,
+                ))),
+            }),
+            shape: Arc::new(Sphere::new(Point3::new(0.0, 5.0, 15.0), 5.0)),
+            medium_interface: MediumInterface {
+                inside: Box::new(ex_medium.clone()),
+                outside: Box::new(ex_medium.clone()),
             },
-        }))
-    }
-    let obj =
-        parser::parse("./objs/codam-stripes-high.obj".to_string()).expect("Could not parse .obj");
-    for (a, b, c) in obj.tris.iter() {
-        let a = Vertex {
-            origin: a.origin.rotate_around(0, std::f64::consts::FRAC_PI_2),
-            normal: a.normal.rotate_around(0, std::f64::consts::FRAC_PI_2),
-            uv: a.uv,
-        };
-        let b = Vertex {
-            origin: b.origin.rotate_around(0, std::f64::consts::FRAC_PI_2),
-            normal: b.normal.rotate_around(0, std::f64::consts::FRAC_PI_2),
-            uv: b.uv,
-        };
-        let c = Vertex {
-            origin: c.origin.rotate_around(0, std::f64::consts::FRAC_PI_2),
-            normal: c.normal.rotate_around(0, std::f64::consts::FRAC_PI_2),
-            uv: c.uv,
-        };
-
-        scene.shapes.push(Shape::Triangle(Triangle {
-            a,
-            b,
-            c,
-            material: Material {
-                texture: MatTex::Texture {
-                    handle: "./textures/codam.png".to_owned(),
-                    scaling: Vec2::new(1.0, 1.0),
-                },
-                c_ambient: 0.3,
-                c_diffuse: 0.3,
-                reflectivity: Reflectivity {
-                    amount: 0.4,
-                    blurriness: 1.0,
-                },
-                transparency: Transparency {
-                    amount: 0.0,
-                    blurriness: 0.0,
-                    index_of_refraction: 1.0,
-                },
+        }),
+        Arc::new(GeometricPrimitive {
+            emission: RGBSpectrum::from_rgb(0.0, 0.0, 0.0),
+            material: Arc::new(Matte {
+                kd: Arc::new(ConstantTexture::new(RGBSpectrum::from_rgb(
+                    255.0, 255.0, 255.0,
+                ))),
+            }),
+            shape: Arc::new(Plane::new(
+                Point3::new(0.0, 0.0, 15.0),
+                Normal::new(0.0, 1.0, 0.0),
+            )),
+            medium_interface: MediumInterface {
+                inside: Box::new(ex_medium.clone()),
+                outside: Box::new(ex_medium.clone()),
             },
-        }))
-    }
+        }),
+        Arc::new(GeometricPrimitive {
+            emission: RGBSpectrum::from_rgb(0.0, 0.0, 0.0),
+            material: Arc::new(Matte {
+                kd: Arc::new(ConstantTexture::new(RGBSpectrum::from_rgb(
+                    255.0, 255.0, 255.0,
+                ))),
+            }),
+            shape: Arc::new(Plane::new(
+                Point3::new(0.0, 20.0, 15.0),
+                Normal::new(0.0, -1.0, 0.0),
+            )),
+            medium_interface: MediumInterface {
+                inside: Box::new(ex_medium.clone()),
+                outside: Box::new(ex_medium.clone()),
+            },
+        }),
+        Arc::new(GeometricPrimitive {
+            emission: RGBSpectrum::from_rgb(0.0, 0.0, 0.0),
+            material: Arc::new(Matte {
+                kd: Arc::new(ConstantTexture::new(RGBSpectrum::from_rgb(
+                    255.0, 10.0, 10.0,
+                ))),
+            }),
+            shape: Arc::new(Plane::new(
+                Point3::new(-10.0, 0.0, 0.0),
+                Normal::new(1.0, 0.0, 0.0),
+            )),
+            medium_interface: MediumInterface {
+                inside: Box::new(ex_medium.clone()),
+                outside: Box::new(ex_medium.clone()),
+            },
+        }),
+        Arc::new(GeometricPrimitive {
+            emission: RGBSpectrum::from_rgb(0.0, 0.0, 0.0),
+            material: Arc::new(Matte {
+                kd: Arc::new(ConstantTexture::new(RGBSpectrum::from_rgb(
+                    255.0, 255.0, 255.0,
+                ))),
+            }),
+            shape: Arc::new(Plane::new(
+                Point3::new(0.0, 0.0, -5.0),
+                Normal::new(0.0, 0.0, 1.0),
+            )),
+            medium_interface: MediumInterface {
+                inside: Box::new(ex_medium.clone()),
+                outside: Box::new(ex_medium.clone()),
+            },
+        }),
+        Arc::new(GeometricPrimitive {
+            emission: RGBSpectrum::from_rgb(0.0, 0.0, 0.0),
+            material: Arc::new(Matte {
+                kd: Arc::new(ConstantTexture::new(RGBSpectrum::from_rgb(
+                    255.0, 255.0, 255.0,
+                ))),
+            }),
+            shape: Arc::new(Plane::new(
+                Point3::new(0.0, 0.0, 20.0),
+                Normal::new(0.0, 0.0, -1.0),
+            )),
+            medium_interface: MediumInterface {
+                inside: Box::new(ex_medium.clone()),
+                outside: Box::new(ex_medium.clone()),
+            },
+        }),
+        Arc::new(GeometricPrimitive {
+            emission: RGBSpectrum::from_rgb(0.0, 0.0, 0.0),
+            material: Arc::new(Matte {
+                kd: Arc::new(ConstantTexture::new(RGBSpectrum::from_rgb(
+                    10.0, 255.0, 10.0,
+                ))),
+            }),
+            shape: Arc::new(Plane::new(
+                Point3::new(10.0, 0.0, 0.0),
+                Normal::new(-1.0, 0.0, 0.0),
+            )),
+            medium_interface: MediumInterface {
+                inside: Box::new(ex_medium.clone()),
+                outside: Box::new(ex_medium.clone()),
+            },
+        }),
+        Arc::new(GeometricPrimitive {
+            emission: RGBSpectrum::from_rgb(255.0, 255.0, 255.0) * 3.0,
+            material: Arc::new(Matte {
+                kd: Arc::new(ConstantTexture::new(RGBSpectrum::from_rgb(
+                    255.0, 255.0, 255.0,
+                ))),
+            }),
+            shape: Arc::new(Sphere::new(Point3::new(0.0, 10.0, 15.0), 5.0)),
+            medium_interface: MediumInterface {
+                inside: Box::new(ex_medium.clone()),
+                outside: Box::new(ex_medium.clone()),
+            },
+        }),
+    ];
 
-    let mut app = app::App::new(scene, texture_map);
+    let aggregate = Aggregate::from_primitives(prims);
 
-    app.run()?;
+    let scene = Scene::new(Arc::new(aggregate), Vec::new());
 
-    //texture_map.preload_all_in_scene(&scene);
-    //scene.screenshot("screenshot.png", 640.0, 480.0, &texture_map);
+    let mut sampler_const = RandomSamplerConstructor::new(32);
+
+    let screen_dimensions = Vec2::new(1920.0, 1080.0);
+    // 3840 x 2160
+    let mut camera = PerspectiveCamera::new(
+        Transform::rotate_x(0.0)
+            * Transform::rotate_y(0.0)
+            * Transform::translation(&Vec3::new(0.0, 5.0, -2.0)),
+        90.0,
+        screen_dimensions,
+    );
+
+    let mut renderer = BasicRenderer::new(sampler_const, Arc::new(camera));
+    let mut render_out = RenderOutput {
+        buf: ImageBuffer::new(screen_dimensions.x as u32, screen_dimensions.y as u32),
+    };
+
+    renderer.render_scene(&scene, (), &mut render_out);
+
+    render_out.save("output-noisy.png");
+
+    render_out.denoise();
+
+    render_out.save("output.png");
+
     Ok(())
 }
