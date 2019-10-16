@@ -1373,7 +1373,7 @@ dependencies = [
  "glium 0.25.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "glutin 0.21.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.22.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "imgui 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "imgui 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "imgui-glium-renderer 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "imgui-winit-support 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
