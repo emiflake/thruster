@@ -8,6 +8,7 @@ use std::sync::Arc;
 
 pub enum BRDF {
     Matte,
+    Reflective,
 }
 
 pub trait Material: std::fmt::Debug + Send + Sync {
@@ -26,5 +27,20 @@ impl<'a> Material for Matte<'a> {
 
     fn compute_scattering_functions(&self, interaction: &Interaction) -> BRDF {
         BRDF::Matte
+    }
+}
+
+#[derive(Debug)]
+pub struct Glossy<'a> {
+    pub kd: Arc<dyn Texture<RGBSpectrum> + 'a>,
+}
+
+impl<'a> Material for Glossy<'a> {
+    fn albedo(&self, uv: &Point2) -> RGBSpectrum {
+        self.kd.sample(uv)
+    }
+
+    fn compute_scattering_functions(&self, interaction: &Interaction) -> BRDF {
+        BRDF::Reflective
     }
 }

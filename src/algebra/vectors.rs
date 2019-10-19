@@ -286,6 +286,10 @@ impl Vec3 {
             self.z
         }
     }
+
+    pub fn reflect(&self, n: &Vec3) -> Self {
+        *self - *n * comb::dot(self, n) * 2.0
+    }
 }
 
 impl Clampable for Vec3 {

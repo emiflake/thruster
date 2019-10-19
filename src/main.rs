@@ -7,7 +7,7 @@ use thruster::algebra::prelude::*;
 use thruster::core::{
     aggregate::Aggregate,
     camera::{Camera, PerspectiveCamera},
-    material::{Material, Matte},
+    material::{Glossy, Material, Matte},
     medium::{HomogeneousMedium, Medium, MediumInterface},
     primitive::{GeometricPrimitive, Primitive},
     renderer::{BasicRenderer, RenderOutput, Renderer},
@@ -15,7 +15,7 @@ use thruster::core::{
     spectrum::RGBSpectrum,
     texture::{ConstantTexture, Texture},
 };
-use thruster::denoise::Denoiser;
+//use thruster::denoise::Denoiser;
 use thruster::geometry::{plane::Plane, shape::Shape, sphere::Sphere};
 use thruster::light::area_light::AreaLight;
 use thruster::logger;
@@ -34,22 +34,22 @@ pub fn main() -> std::result::Result<(), String> {
     };
 
     let prims: Vec<Arc<dyn Primitive + Send + Sync>> = vec![
-        Arc::new(GeometricPrimitive {
-            emission: RGBSpectrum::from_rgb(0.0, 0.0, 255.0),
-            material: Arc::new(Matte {
-                kd: Arc::new(ConstantTexture::new(RGBSpectrum::from_rgb(
-                    255.0, 10.0, 10.0,
-                ))),
-            }),
-            shape: Arc::new(Sphere::new(Point3::new(0.0, 5.0, 15.0), 5.0)),
-            medium_interface: MediumInterface {
-                inside: Box::new(ex_medium.clone()),
-                outside: Box::new(ex_medium.clone()),
-            },
-        }),
+        //Arc::new(GeometricPrimitive {
+        //emission: RGBSpectrum::from_rgb(0.0, 0.0, 0.0),
+        //material: Arc::new(Matte {
+        //kd: Arc::new(ConstantTexture::new(RGBSpectrum::from_rgb(
+        //255.0, 10.0, 10.0,
+        //))),
+        //}),
+        //shape: Arc::new(Sphere::new(Point3::new(0.0, 5.0, 15.0), 5.0)),
+        //medium_interface: MediumInterface {
+        //inside: Box::new(ex_medium.clone()),
+        //outside: Box::new(ex_medium.clone()),
+        //},
+        //}),
         Arc::new(GeometricPrimitive {
             emission: RGBSpectrum::from_rgb(0.0, 0.0, 0.0),
-            material: Arc::new(Matte {
+            material: Arc::new(Glossy {
                 kd: Arc::new(ConstantTexture::new(RGBSpectrum::from_rgb(
                     255.0, 255.0, 255.0,
                 ))),
@@ -103,7 +103,7 @@ pub fn main() -> std::result::Result<(), String> {
                 ))),
             }),
             shape: Arc::new(Plane::new(
-                Point3::new(0.0, 0.0, -5.0),
+                Point3::new(0.0, 0.0, -50.0),
                 Normal::new(0.0, 0.0, 1.0),
             )),
             medium_interface: MediumInterface {
@@ -150,7 +150,20 @@ pub fn main() -> std::result::Result<(), String> {
                     255.0, 255.0, 255.0,
                 ))),
             }),
-            shape: Arc::new(Sphere::new(Point3::new(0.0, 10.0, 15.0), 5.0)),
+            shape: Arc::new(Sphere::new(Point3::new(0.0, 20.0, 15.0), 5.0)),
+            medium_interface: MediumInterface {
+                inside: Box::new(ex_medium.clone()),
+                outside: Box::new(ex_medium.clone()),
+            },
+        }),
+        Arc::new(GeometricPrimitive {
+            emission: RGBSpectrum::from_rgb(0.0, 0.0, 0.0) * 3.0,
+            material: Arc::new(Matte {
+                kd: Arc::new(ConstantTexture::new(RGBSpectrum::from_rgb(
+                    255.0, 255.0, 255.0,
+                ))),
+            }),
+            shape: Arc::new(Sphere::new(Point3::new(0.0, 5.0, 15.0), 5.0)),
             medium_interface: MediumInterface {
                 inside: Box::new(ex_medium.clone()),
                 outside: Box::new(ex_medium.clone()),
@@ -162,15 +175,15 @@ pub fn main() -> std::result::Result<(), String> {
 
     let scene = Scene::new(Arc::new(aggregate), Vec::new());
 
-    let mut sampler_const = RandomSamplerConstructor::new(32);
+    let mut sampler_const = RandomSamplerConstructor::new(256);
 
     let screen_dimensions = Vec2::new(1920.0, 1080.0);
     // 3840 x 2160
     let mut camera = PerspectiveCamera::new(
         Transform::rotate_x(0.0)
             * Transform::rotate_y(0.0)
-            * Transform::translation(&Vec3::new(0.0, 5.0, -2.0)),
-        90.0,
+            * Transform::translation(&Vec3::new(0.0, 5.0, -30.0)),
+        65.0,
         screen_dimensions,
     );
 

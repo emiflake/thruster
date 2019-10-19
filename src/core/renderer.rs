@@ -88,6 +88,19 @@ impl<'a> BasicRenderer<'a> {
                             .li(&ray, scene, depth - 1, samp)
                             .mul_with(isect.primitive.mat().albedo(&Point2::new(0.0, 0.0)));
                     }
+                    BRDF::Reflective => {
+                        let refl = ray.direction.reflect(&Vec3::from(isect.geom.normal));
+                        let specularity = 0.1;
+                        let random_p = Vec3::new(samp.get_1d(), samp.get_1d(), samp.get_1d())
+                            - Vec3::new(0.5, 0.5, 0.5);
+                        let dir = refl + (random_p * specularity);
+
+                        let ray = Ray::new(isect.geom.origin, dir.normalized());
+
+                        col += self
+                            .li(&ray, scene, depth - 1, samp)
+                            .mul_with(isect.primitive.mat().albedo(&Point2::new(0.0, 0.0)));
+                    }
                 }
 
                 col
@@ -114,7 +127,8 @@ impl<'a> Renderer for BasicRenderer<'a> {
                         samp.start_pixel(Pixel::new(x as usize, y as usize));
                         'sample_loop: loop {
                             let mut camera_sample = samp.get_camera_sample();
-                            camera_sample.film_pos = Point2::new(f64::from(x), f64::from(y));
+                            camera_sample.film_pos =
+                                Point2::new(f64::from(x), f64::from(y)) + camera_sample.film_pos;
                             let ray = self.camera.generate_ray(&camera_sample);
                             let l = self.li(&ray, scene, 5, &mut samp);
                             contribution.add_contribution(l, samp.spp());
