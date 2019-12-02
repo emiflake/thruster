@@ -13,7 +13,7 @@ scoped_threadpool = "0.1.9"
 rayon = "1.2.0"
 
 # Rendering Backend
-glutin = "0.21.0"
+glutin = "0.21.2"
 glium = "0.25.1"
 
 # UI handling
