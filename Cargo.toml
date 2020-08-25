@@ -10,7 +10,7 @@ edition = "2018"
 image = "0.22.3"
 rand = "0.7.0"
 scoped_threadpool = "0.1.9"
-rayon = "1.2.0"
+rayon = "1.4.0"
 
 # Rendering Backend
 glutin = "0.21.0"
