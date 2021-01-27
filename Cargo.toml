@@ -36,7 +36,7 @@ pdqselect = "0.1.0"
 
 # For Logging purposes
 log = "0.4.8"
-termion = "1.5.3"
+termion = "1.5.6"
 chrono = "0.4.9"
 
 [dev-dependencies]
